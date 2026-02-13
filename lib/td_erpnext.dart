@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -52,13 +53,36 @@ class ManagerWorkflow extends ConfigureStep {
     final DockerContainer backendContainer = DockerContainer(
       settingsDocument["parameter"]["docker_frappe_backend_container_name"],
     );
-    final String backupPath = pathsDocument["backup_directory"];
-    final String currentSite =
-        settingsDocument["parameter"]["erpnext_site_name"];
 
     final String appDirectoryPath = path.join(
       rootDirectoryPath,
       pathsDocument["app_directory"],
+    );
+    final String backupPath = path.join(
+      appDirectoryPath,
+      pathsDocument["backup_directory"],
+    );
+    final String currentSite =
+        settingsDocument["parameter"]["erpnext_site_name"];
+    final String composeFilePath = path.join(
+      appDirectoryPath,
+      "frappe_docker",
+      "pwd.yml",
+    );
+    String getPrettyJSONString(jsonObject) {
+      var encoder = new JsonEncoder.withIndent("     ");
+      return encoder.convert(jsonObject);
+    }
+
+    print(
+      getPrettyJSONString({
+        "paths": paths.path,
+        "settings": settings.path,
+        "appDirectoryPath": appDirectoryPath,
+        "backupPath": backupPath,
+        "currentSite": currentSite,
+        "composeFilePath": composeFilePath,
+      }),
     );
     return Chain(
       steps: [
@@ -92,9 +116,8 @@ class ManagerWorkflow extends ConfigureStep {
           ),
         ),
         DockerCompose.setup(
-          composeFile: File(
-            path.join(appDirectoryPath, "frappe_docker", "pwd.yml"),
-          ),
+          composeFile: File(composeFilePath),
+          workingDirectory: appDirectoryPath,
           detach: true,
           runAsAdministrator: true,
           onStdout: onStdout,
@@ -135,7 +158,7 @@ class ManagerWorkflow extends ConfigureStep {
                   volumesFrom: [backendContainer],
                   volumes: [
                     DockerVolume(
-                      hostPath: path.absolute(backupPath),
+                      hostPath: backupPath,
                       containerPath: "/backup",
                     ),
                   ],
