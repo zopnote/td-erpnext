@@ -1,0 +1,13 @@
+
+# The app directory is the location of the data files and directories of the working process.
+# In the directory specified, frappe_docker and similar files or directories will be placed in.
+app_directory: "app"
+
+# The backup directory is the location where backups will be stored.
+# It is recommended to use a separate directory for backups to avoid cluttering the app directory.
+backup_directory: "backup"
+
+# The log directory is the location where log files will be stored.
+# It is recommended to use a separate directory for logs to avoid cluttering the app directory.
+log_directory: "logs"
+
