@@ -7,3 +7,4 @@ The automation logic is built using the Stepflow library, which organizes tasks 
 
 The project runs on Linux, tested on Ubuntu.
 To build and run the project binaries and start a new erpnext docker container, just clone the repository, run dart pub get and sudo dart run build/run.dart inside the projects root.
+Maybe you have to configure the names of the docker image parameter names, in conf/settings to ensure the manager cli app uses the right interface to the docker executables.
