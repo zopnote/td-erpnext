@@ -286,9 +286,9 @@ class DockerCompose {
     DockerOutputCallback? onStdout,
     DockerOutputCallback? onStderr,
   }) {
-    final List<String> arguments = ["compose"];
+    final List<String> arguments = [];
     if (composeFile != null) {
-      arguments.addAll(["-f", path.basename(composeFile.path)]);
+      arguments.addAll(["-f", composeFile.path]);
     }
     if (projectName != null) {
       arguments.addAll(["-p", projectName]);
@@ -298,13 +298,11 @@ class DockerCompose {
     if (build) arguments.add("--build");
 
     return Shell(
-      program: "docker",
+      program: "docker-compose",
       arguments: arguments,
       options: ProcessInterfaceOptions(
         runAsAdministrator: runAsAdministrator,
-        workingDirectory:
-            workingDirectory ??
-            (composeFile != null ? path.dirname(composeFile.path) : null),
+        workingDirectory: workingDirectory,
       ),
       onStdout: onStdout,
       onStderr: onStderr,
@@ -321,7 +319,7 @@ class DockerCompose {
     DockerOutputCallback? onStdout,
     DockerOutputCallback? onStderr,
   }) {
-    final List<String> arguments = ["compose"];
+    final List<String> arguments = [];
     if (composeFile != null) {
       arguments.addAll(["-f", path.basename(composeFile.path)]);
     }
@@ -330,7 +328,7 @@ class DockerCompose {
     if (removeImages) arguments.addAll(["--rmi", "all"]);
 
     return Shell(
-      program: "docker",
+      program: "docker-compose",
       arguments: arguments,
       options: ProcessInterfaceOptions(
         runAsAdministrator: runAsAdministrator,
