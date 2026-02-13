@@ -1,0 +1,13 @@
+name: td_erpnext
+description: Tool for automize backups and the management of the erpnext service under ubuntu.
+version: 1.0.0
+publish_to: none
+entrypoint: main.dart
+
+environment:
+  sdk: ^3.10.6
+
+dependencies:
+  path: ^1.9.0
+  stepflow: ^2.2.2
+  yaml: ^3.1.0
