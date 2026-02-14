@@ -41,16 +41,13 @@ jobs:
       - name: Run build script
         run: dart build/build.dart
 
-      - name: Package Binary
+      - name: Package Release
         run: |
-          # Laut Beschreibung ist der Output unter out/linux-amd64/td-erpnext/
-          # Das Binary selbst liegt laut Workflow in out/linux-amd64/td-erpnext/bin/td-erpnext
-          cd out/linux-amd64/
-          tar -czvf ../../../../td-erpnext-linux-amd64.tar.gz td-erpnext
+          zip -r td-erpnext-linux-amd64.zip . -x ".git/*"
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: td-erpnext-linux-amd64.tar.gz
+          files: td-erpnext-linux-amd64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
