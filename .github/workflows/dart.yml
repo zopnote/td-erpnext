@@ -1,0 +1,59 @@
+name: Dart CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  release:
+    types: [created]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze project source
+        run: dart analyze
+
+  build-and-release:
+    needs: analyze
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run build script
+        run: dart build/build.dart
+
+      - name: Package Binary
+        run: |
+          # Laut Beschreibung ist der Output unter out/linux-amd64/td-erpnext/
+          # Das Binary selbst liegt laut Workflow in out/linux-amd64/td-erpnext/bin/td-erpnext
+          cd out/linux-amd64/
+          tar -czvf ../../../../td-erpnext-linux-amd64.tar.gz td-erpnext
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: td-erpnext-linux-amd64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
