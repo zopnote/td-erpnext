@@ -7,7 +7,6 @@ import 'lib/build_project_workflow.dart';
 Future<void> main() async => await runWorkflow(
   BuildWorkflow(
     projectRoot: await projectRoot,
-    confDirectoryName: "conf",
     outDirectoryName: "out",
     readme: io.File(path.join((await projectRoot).path, "readme.md")),
     pubspec: io.File(path.join((await projectRoot).path, "pubspec.yaml")),
