@@ -5,7 +5,6 @@ import 'package:path/path.dart' as path;
 import 'package:stepflow/io.dart';
 import 'package:stepflow/core.dart';
 import 'package:stepflow/platform.dart';
-import 'package:td_erpnext/src/settings.dart';
 import 'package:yaml/yaml.dart';
 
 import 'get_project_root.dart';
