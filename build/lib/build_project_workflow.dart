@@ -5,6 +5,7 @@ import 'package:path/path.dart' as path;
 import 'package:stepflow/io.dart';
 import 'package:stepflow/core.dart';
 import 'package:stepflow/platform.dart';
+import 'package:td_erpnext/src/settings.dart';
 import 'package:yaml/yaml.dart';
 
 import 'get_project_root.dart';
@@ -27,7 +28,6 @@ class PackageSpecification {
 
 class BuildWorkflow extends ConfigureStep {
   final io.Directory projectRoot;
-  final String confDirectoryName;
   final String outDirectoryName;
   final void Function(io.File executable)? buildFinishCallback;
   final io.File readme;
@@ -35,7 +35,6 @@ class BuildWorkflow extends ConfigureStep {
 
   const BuildWorkflow({
     required this.projectRoot,
-    required this.confDirectoryName,
     required this.outDirectoryName,
     required this.readme,
     required this.pubspec,
@@ -46,7 +45,7 @@ class BuildWorkflow extends ConfigureStep {
     final Uint8List bytes = pubspec.readAsBytesSync();
     final document = loadYaml(String.fromCharCodes(bytes));
     return PackageSpecification(
-      name: document["name"],
+      name: document["executable"],
       description: document["description"],
       version: document["version"],
       entrypointFileName: document["entrypoint"],
@@ -56,9 +55,6 @@ class BuildWorkflow extends ConfigureStep {
   @override
   Step configure() {
     final PackageSpecification pubspec = _loadPackageInfo(this.pubspec);
-    final io.Directory conf = io.Directory(
-      path.join(projectRoot.path, confDirectoryName),
-    );
     final io.Directory output = io.Directory(
       path.join(
         projectRoot.path,
@@ -102,12 +98,15 @@ class BuildWorkflow extends ConfigureStep {
             }
           },
         ),
-        Install(
-          directories: [path.basename(conf.path)],
-          binariesPath: path.dirname(conf.path),
-          installPath: output.path,
+        Runnable(
+          (context) => buildFinishCallback != null
+              ? buildFinishCallback!(
+                  io.File(
+                    "${path.join(output.path, "bin", pubspec.name)}$executableExtension",
+                  ),
+                )
+              : null,
         ),
-        Runnable((context) => buildFinishCallback != null ? buildFinishCallback!(io.File("${path.join(output.path, "bin", pubspec.name)}$executableExtension")) : null),
       ],
     );
   }
