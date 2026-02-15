@@ -14,6 +14,10 @@ import 'commands/backups/list.dart';
 import 'commands/backups/off.dart';
 import 'commands/backups/on.dart';
 import 'commands/backups/restore.dart';
+import 'commands/uninstall.dart';
+import 'commands/fix.dart';
+import 'commands/stop.dart';
+import 'commands/start.dart';
 
 List<Flag> get settingFlags {
   return [
@@ -61,6 +65,21 @@ List<Flag> get settingFlags {
           "The root password of the database of the erpnext installation.",
       value: settingsAtProgramStart.dbRootPassword,
     ),
+    TextFlag(
+      name: Settings.json(#backupSourcePath),
+      description:
+          "Sets the backup source directory where backups "
+          "will be retrieved from. The entire path is in the corresponding "
+          "docker container.",
+      value: settingsAtProgramStart.backupSourcePath,
+    ),
+    TextFlag(
+      name: Settings.json(#backupDestinationPath),
+      description:
+          "Sets the backup directory where backups get stored. "
+          "Path in the filesystem.",
+      value: settingsAtProgramStart.backupDestinationPath,
+    ),
   ];
 }
 
@@ -80,10 +99,39 @@ Future<void> main(List<String> arguments) async {
           "Tool for automize backups and the management of the erpnext service under linux.",
       subCommands: [
         Command(
+          use: "fix",
+          description: "Apply some fixes to encounter issues.",
+          flags: [BoolFlag(name: "reset_settings", value: false)],
+          run: fixCommand,
+        ),
+        Command(
+          use: "start",
+          description: "Start the ERPNext-instance.",
+          run: startCommand,
+        ),
+        Command(
+          use: "stop",
+          description: "Stops the running ERPNext-instance.",
+          run: stopCommand,
+        ),
+        Command(
           use: "status",
           description:
               "Status information about the installation and the manager.",
           run: statusCommand,
+        ),
+        Command(
+          use: "uninstall",
+          description: "Removes the installation securely.",
+          flags: [
+            BoolFlag(
+              name: "remove_backups",
+              description:
+                  "If the backups managed by this instance should also be deleted.",
+              value: false,
+            ),
+          ],
+          run: uninstallCommand,
         ),
         Command(
           use: "setup",
@@ -112,21 +160,6 @@ Future<void> main(List<String> arguments) async {
                 Duration(days: 1, hours: 12, minutes: 45),
                 Duration(minutes: 20),
               ],
-            ),
-            TextFlag(
-              name: Settings.json(#backupSourcePath),
-              description:
-                  "Sets the backup source directory where backups "
-                  "will be retrieved from. The entire path is in the corresponding "
-                  "docker container.",
-              value: settingsAtProgramStart.backupSourcePath,
-            ),
-            TextFlag(
-              name: Settings.json(#backupDestinationPath),
-              description:
-                  "Sets the backup directory where backups get stored. "
-                  "Path in the filesystem.",
-              value: settingsAtProgramStart.backupDestinationPath,
             ),
           ],
           subCommands: [
