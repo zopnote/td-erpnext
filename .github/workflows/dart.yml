@@ -49,7 +49,8 @@ jobs:
 
       - name: Package Release
         run: |
-          zip -r td-erpnext-linux-amd64.zip ./out/linux-amd64/td-erpnext -x ".git/*"
+          zip -r td-erpnext-linux-amd64.zip ./linux-amd64/td-erpnext -x ".git/*"
+        working-directory: out/
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
