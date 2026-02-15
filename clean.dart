@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import 'lib/build_project_workflow.dart';
+import 'build.dart';
 
 Future<void> main() async {
   print("Remove output directory...");

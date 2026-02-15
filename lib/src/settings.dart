@@ -51,6 +51,10 @@ class Settings {
   @Json('backup_dist')
   final String backupDestinationPath;
 
+  /// The root password of the database of the erpnext installation.
+  @Json('db_root_password')
+  final String dbRootPassword;
+
   //__________________________________________________________________________________________________________
   // v HARD CODED PARAMETER
 
@@ -86,6 +90,7 @@ class Settings {
     final String backupSourcePath = "/home/frappe/frappe-bench/sites/<erpnext_site_name>/private/backups",
     this.logDirectoryName = "logs",
     this.backupDestinationPath = "/var/backups/erpnext",
+    this.dbRootPassword = "admin",
   }) {
     this.backupSourcePath = backupSourcePath.replaceAll("<erpnext_site_name>", currentSite);
   }
@@ -124,6 +129,8 @@ class Settings {
         backupDestinationPath:
             document[json(#backupDestinationPath)] as String? ??
             def.backupDestinationPath,
+        dbRootPassword:
+            document[json(#dbRootPassword)] as String? ?? def.dbRootPassword,
       );
     } catch (e) {
       print("[Settings.load] Error loading configuration: $e");
@@ -138,6 +145,7 @@ class Settings {
     json(#logDirectoryName): logDirectoryName,
     json(#backupSourcePath): backupSourcePath,
     json(#backupDestinationPath): backupDestinationPath,
+    json(#dbRootPassword): dbRootPassword,
   };
 
   /// Saves the current settings to the configuration file.
@@ -188,6 +196,7 @@ class Settings {
       #logDirectoryName: 'log_directory',
       #backupSourcePath: 'backup_src',
       #backupDestinationPath: 'backup_dist',
+      #dbRootPassword: 'db_root_password',
     };
 
     if (mapping.containsKey(fieldSymbol)) {

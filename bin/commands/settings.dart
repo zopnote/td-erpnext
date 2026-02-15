@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:stepflow/io.dart';
-import 'package:td_erpnext/src/log_color.dart';
+import 'package:stepflow/src/io/steps/log_print.dart';
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/flags.dart';
 
@@ -36,12 +36,13 @@ Future<Response> settingsCommand(CommandInformation info) async {
 
   if (settings == settingsAtProgramStart) {
     stdout.writeln(
-      LogColor.yellow(
+      LogColor.yellowed(
         "Note that no changes were made. Use '--help' to see the changeable settings.",
       ),
     );
     return Response(
-      "The current settings are the following:\n${JsonEncoder.withIndent('  ').convert(settings.document).replaceAll("{", "").replaceAll("}", "").replaceAll("\"", "").replaceAll(",", "")}",
+      "The current settings are the following:"
+      "\n${JsonEncoder.withIndent('  ').convert(settings.document).replaceAll("{", "").replaceAll("}", "").replaceAll("\"", "").replaceAll(",", "")}",
     );
   }
   settings.dump();

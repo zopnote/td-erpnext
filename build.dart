@@ -2,12 +2,26 @@ import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as path;
-import 'package:stepflow/io.dart';
 import 'package:stepflow/core.dart';
+import 'package:stepflow/io.dart';
 import 'package:stepflow/platform.dart';
 import 'package:yaml/yaml.dart';
 
-import 'get_project_root.dart';
+Future<void> main() async => await runWorkflow(
+  BuildWorkflow(
+    projectRoot: await projectRoot,
+    outDirectoryName: "out",
+    readme: io.File(path.join((await projectRoot).path, "readme.md")),
+    pubspec: io.File(path.join((await projectRoot).path, "pubspec.yaml")),
+  ), (response) {
+    if (response.isError) {
+      io.stderr.writeln(response.message);
+      return;
+    }
+    io.stdout.writeln(response.message);
+  },
+);
+
 
 Future<io.Directory> get projectRoot async => await getProjectRoot();
 
@@ -97,13 +111,21 @@ class BuildWorkflow extends ConfigureStep {
             }
           },
         ),
+        Install(
+            binariesPath: projectRoot.path,
+            installPath: output.path,
+            files: [
+              "readme",
+              "license"
+            ]
+        ),
         Runnable(
-          (context) => buildFinishCallback != null
+              (context) => buildFinishCallback != null
               ? buildFinishCallback!(
-                  io.File(
-                    "${path.join(output.path, "bin", pubspec.name)}$executableExtension",
-                  ),
-                )
+            io.File(
+              "${path.join(output.path, "bin", pubspec.name)}$executableExtension",
+            ),
+          )
               : null,
         ),
       ],
@@ -116,10 +138,10 @@ class CreateDirectory extends ConfigureStep {
   final bool recursive;
   final bool deleteIfExists;
   const CreateDirectory(
-    this.path, {
-    this.recursive = false,
-    this.deleteIfExists = false,
-  });
+      this.path, {
+        this.recursive = false,
+        this.deleteIfExists = false,
+      });
   @override
   Step configure() => Runnable((context) async {
     final bool exists = await io.Directory(path).exists();
@@ -136,4 +158,30 @@ class CreateDirectory extends ConfigureStep {
 extension PlatformString on Platform {
   String name() =>
       "${attributes.name == os.name ? os.name : "${os.name}-${attributes.name}"}-${attributes.arch.name}";
+}
+
+Future<io.Directory> getProjectRoot() async {
+  io.Directory projectRoot = io.Directory.current;
+  const int maxSearch = 3;
+  int searched = 0;
+  bool isRoot = false;
+  while (!isRoot) {
+    await for (io.FileSystemEntity entity in projectRoot.list()) {
+      if (entity is io.Directory) {
+        if (path.basename(entity.path) == ".git") {
+          isRoot = true;
+          break;
+        }
+      }
+    }
+    if (isRoot) break;
+    projectRoot = io.Directory(path.dirname(projectRoot.path));
+    if (!projectRoot.existsSync() || searched >= maxSearch) {
+      throw Exception(
+        "Can't find a root of a repository superordinary to the file.",
+      );
+    }
+    searched++;
+  }
+  return projectRoot;
 }

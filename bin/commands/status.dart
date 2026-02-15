@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:stepflow/io.dart';
-import 'package:td_erpnext/src/log_color.dart';
+import 'package:stepflow/src/io/steps/log_print.dart';
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/docker.dart';
 import 'package:td_erpnext/src/flags.dart';
@@ -41,10 +41,10 @@ Future<Response> statusCommand(CommandInformation info) async {
 
   return Response("""
 ${info.command.description}
-ERPNext-Installation: ${installed ? running! ? LogColor.green("✓ Running") : LogColor.cyan("✓ Installed, not running") : LogColor.red("✕ Not found")}
-Configuration: ${confFileExists ? LogColor.green("✓ Valid") : LogColor.red("✕ Not found")}
-Services: (backup-scheduler) ${schedulerInstalled ? LogColor.green("✓ Installed") + " (Period: ${LogColor.cyan("$backupPeriod")})" : LogColor.red("✕ Not installed")}, (start-on-boot) ${bootInstalled ? LogColor.green("✓ Installed") : LogColor.red("✕ Not installed")}
-Tries to connect to: (container) ${LogColor.cyan(settings.dockerContainerName)}, (port) ${LogColor.cyan(settings.connectionPort.toString())}, (site) ${LogColor.cyan(settings.currentSite)}
+ERPNext-Installation: ${installed ? running! ? LogColor.greened("✓ Running") : LogColor.cyanid("✓ Installed, not running") : LogColor.redid("✕ Not found")}
+Configuration: ${confFileExists ? LogColor.greened("✓ Valid") : LogColor.redid("✕ Not found")}
+Services: (backup-scheduler) ${schedulerInstalled ? LogColor.greened("✓ Installed") + " (Period: ${LogColor.cyanid("$backupPeriod")})" : LogColor.redid("✕ Not installed")}, (start-on-boot) ${bootInstalled ? LogColor.greened("✓ Installed") : LogColor.redid("✕ Not installed")}
+Tries to connect to: (container) ${LogColor.cyanid(settings.dockerContainerName)}, (port) ${LogColor.cyanid(settings.connectionPort.toString())}, (site) ${LogColor.cyanid(settings.currentSite)}
   """);
 }
 
