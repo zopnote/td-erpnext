@@ -9,6 +9,11 @@ import 'commands/status.dart';
 import 'commands/settings.dart';
 import 'commands/setup.dart';
 import 'commands/backups.dart';
+import 'commands/backups/create.dart';
+import 'commands/backups/list.dart';
+import 'commands/backups/off.dart';
+import 'commands/backups/on.dart';
+import 'commands/backups/restore.dart';
 
 List<Flag> get settingFlags {
   return [
@@ -50,108 +55,130 @@ List<Flag> get settingFlags {
           "files of the working process are stored.",
       value: settingsAtProgramStart.logDirectoryName,
     ),
+    TextFlag(
+      name: Settings.json(#dbRootPassword),
+      description:
+          "The root password of the database of the erpnext installation.",
+      value: settingsAtProgramStart.dbRootPassword,
+    ),
   ];
 }
 
-Future<void> main(List<String> arguments) async => exitCode = await runCommand(
-  Command(
-    use: "td-erpnext",
-    description:
-        "Tool for automize backups and the management of the erpnext service under linux.",
-    subCommands: [
-      Command(
-        use: "status",
-        description:
-            "Status information about the installation and the manager.",
-        run: statusCommand,
-      ),
-      Command(
-        use: "setup",
-        description: "Installs and starts frappe erpnext.",
-        flags: settingFlags,
-        run: setupCommand,
-      ),
-      Command(
-        use: "settings",
-        description:
-            "Adjust the settings. To adjust settings related to backups, use the corresponding command.",
-        flags: settingFlags,
-        run: settingsCommand,
-      ),
-      Command(
-        use: "backups",
-        description: "Manage backups.",
-        flags: [
-          DurationFlag(
-            name: "interval",
-            value: Systemd.isSchedulerInstalled(Settings.serviceName)
-                ? Systemd.getSchedulerDuration(Settings.serviceName)
-                : Duration(days: 2),
-            description: "Sets the schedule of backup creation.",
-            examples: [
-              Duration(days: 1, hours: 12, minutes: 45),
-              Duration(minutes: 20),
-            ],
-          ),
-          TextFlag(
-            name: Settings.json(#backupSourcePath),
-            description:
-                "Sets the backup source directory where backups "
-                "will be retrieved from. The entire path is in the corresponding "
-                "docker container.",
-            value: settingsAtProgramStart.backupSourcePath,
-          ),
-          TextFlag(
-            name: Settings.json(#backupDestinationPath),
-            description:
-                "Sets the backup directory where backups get stored. "
-                "Path in the filesystem.",
-            value: settingsAtProgramStart.backupDestinationPath,
-          ),
-        ],
-        subCommands: [
-          Command(
-            use: "on",
-            description: "Enables backups of the erpnext volumes.",
-            inheritFlags: true,
-            run: backupsEnableCommand,
-          ),
-          Command(
-            use: "off",
-            description: "Enables backups of the erpnext volumes.",
-            inheritFlags: false,
-            run: backupsDisableCommand,
-          ),
-          Command(
-            use: "create",
-            description: "Creates a backup.",
-            inheritFlags: false,
-            run: backupsCreateCommand,
-          ),
-          Command(
-            use: "restore",
-            description: "Restores a backup.",
-            inheritFlags: false,
-            flags: [
-              TextFlag(
-                name: "path",
-                description: "Path to a specific backup directory. If not provided, the latest backup will be used.",
-                value: "",
-              ),
-            ],
-            run: backupsRestoreCommand,
-          ),
-          Command(
-            use: "list",
-            description: "Lists all available backups.",
-            inheritFlags: true,
-            run: backupsListCommand,
-          ),
-        ],
-        run: backupsCommand,
-      ),
-    ],
-    run: (info) => Response(info.formatSyntax(), Level.normal),
-  ),
-  arguments,
-);
+Future<void> main(List<String> arguments) async {
+  final String? user = Platform.environment['USER'];
+  if (user != null && user.isNotEmpty && user != "root") {
+    throw Exception(
+      "This application needs "
+      "root access to execute the desired commands. "
+      "Ensure the permissions are provided.",
+    );
+  }
+  exitCode = await runCommand(
+    Command(
+      use: "td-erpnext",
+      description:
+          "Tool for automize backups and the management of the erpnext service under linux.",
+      subCommands: [
+        Command(
+          use: "status",
+          description:
+              "Status information about the installation and the manager.",
+          run: statusCommand,
+        ),
+        Command(
+          use: "setup",
+          description: "Installs and starts frappe erpnext.",
+          flags: settingFlags,
+          run: setupCommand,
+        ),
+        Command(
+          use: "settings",
+          description:
+              "Adjust the settings. To adjust settings related to backups, use the corresponding command.",
+          flags: settingFlags,
+          run: settingsCommand,
+        ),
+        Command(
+          use: "backups",
+          description: "Manage backups.",
+          flags: [
+            DurationFlag(
+              name: "interval",
+              value: Systemd.isSchedulerInstalled(Settings.serviceName)
+                  ? Systemd.getSchedulerDuration(Settings.serviceName)
+                  : Duration(days: 2),
+              description: "Sets the schedule of backup creation.",
+              examples: [
+                Duration(days: 1, hours: 12, minutes: 45),
+                Duration(minutes: 20),
+              ],
+            ),
+            TextFlag(
+              name: Settings.json(#backupSourcePath),
+              description:
+                  "Sets the backup source directory where backups "
+                  "will be retrieved from. The entire path is in the corresponding "
+                  "docker container.",
+              value: settingsAtProgramStart.backupSourcePath,
+            ),
+            TextFlag(
+              name: Settings.json(#backupDestinationPath),
+              description:
+                  "Sets the backup directory where backups get stored. "
+                  "Path in the filesystem.",
+              value: settingsAtProgramStart.backupDestinationPath,
+            ),
+          ],
+          subCommands: [
+            Command(
+              use: "on",
+              description: "Enables backups of the erpnext volumes.",
+              inheritFlags: true,
+              run: backupsEnableCommand,
+            ),
+            Command(
+              use: "off",
+              description: "Enables backups of the erpnext volumes.",
+              inheritFlags: false,
+              run: backupsDisableCommand,
+            ),
+            Command(
+              use: "create",
+              description: "Creates a backup.",
+              inheritFlags: false,
+              run: backupsCreateCommand,
+            ),
+            Command(
+              use: "restore",
+              description: "Restores a backup.",
+              inheritFlags: false,
+              subCommands: [
+                Command(
+                  use: "<backup>",
+                  description:
+                      "Specify a backup by its name. See available backups with backups list.",
+                  run: (info) => Response(info.command.formatSyntax()),
+                ),
+                Command(
+                  use: "last",
+                  description: "Restores the last backup.",
+                  run: backupsRestoreLastCommand,
+                ),
+              ],
+              run: backupsRestoreCommand,
+            ),
+            Command(
+              use: "list",
+              description: "Lists all available backups.",
+              inheritFlags: true,
+              run: backupsListCommand,
+            ),
+          ],
+          run: backupsCommand,
+        ),
+      ],
+      run: (info) => Response(info.formatSyntax(), Level.normal),
+    ),
+    arguments,
+  );
+}

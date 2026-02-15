@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:stepflow/core.dart';
@@ -5,6 +6,7 @@ import 'package:stepflow/io.dart';
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/setup.dart';
 import 'package:td_erpnext/src/docker.dart';
+import 'package:stepflow/src/io/steps/log_print.dart';
 import 'package:td_erpnext/src/flags.dart';
 import 'package:td_erpnext/src/systemd.dart';
 
@@ -25,6 +27,7 @@ Future<Response> setupCommand(CommandInformation info) async {
   final dCN = info.getFlag(Settings.json(#dockerContainerName)) as TextFlag;
   final aDN = info.getFlag(Settings.json(#appDirectoryName)) as TextFlag;
   final lDN = info.getFlag(Settings.json(#logDirectoryName)) as TextFlag;
+  final dRP = info.getFlag(Settings.json(#dbRootPassword)) as TextFlag;
 
   final Settings settings = Settings(
     connectionPort: cP.value,
@@ -32,33 +35,29 @@ Future<Response> setupCommand(CommandInformation info) async {
     dockerContainerName: dCN.value,
     appDirectoryName: aDN.value,
     logDirectoryName: lDN.value,
+    dbRootPassword: dRP.value,
     backupSourcePath: settingsAtProgramStart.backupSourcePath,
     backupDestinationPath: settingsAtProgramStart.backupDestinationPath,
   );
 
   settings.dump();
 
-  await runWorkflow(
-    SetupWorkflow(settings: settings),
-    (response) {
-      if (response.isError) {
-        stderr.writeln(response.message);
-        return;
-      }
-      stdout.writeln(response.message);
-    },
-  );
-  return const Response();
-}
+  if (settings != settingsAtProgramStart) {
+    stdout.write(
+      JsonEncoder.withIndent('  ')
+          .convert(settings.document)
+          .replaceAll("{", "")
+          .replaceAll("}", "")
+          .replaceAll("\"", "")
+          .replaceAll(",", ""),
+    );
+  }
 
-class SetupWorkflow extends ConfigureStep {
-  final Settings settings;
-  const SetupWorkflow({required this.settings});
-  @override
-  Step configure() {
-    return Chain(
+  final Response lastResponse = await runWorkflow(
+    Chain(
       steps: [
-        ERPNextInstall(
+        LogASCIIContext("Setup docker container..."),
+        ERPNextSetup(
           appDirectoryPath: settings.appDirectoryPath,
           onCallback: (context, chars, error) => context.send(
             Response(
@@ -67,12 +66,26 @@ class SetupWorkflow extends ConfigureStep {
             ),
           ),
         ),
+        LogASCIIContext("Set restart policy of container..."),
         Docker.update(
           containers: [DockerContainer(settings.dockerContainerName)],
           settings: DockerUpdateSettings(restart: DockerRestartPolicy.no),
         ),
-        Systemd.setupBoot(serviceName: Settings.serviceName, arguments: ["start"]),
+        LogASCIIContext("Add systemd boot service..."),
+        Systemd.setupBoot(
+          serviceName: Settings.serviceName,
+          arguments: ["start"],
+        ),
       ],
-    );
-  }
+    ),
+    (response) {
+      if (response.isError) {
+        stderr.writeln(response.message);
+        return;
+      }
+      stdout.writeln(response.message);
+    },
+  );
+
+  return Response("", lastResponse.level);
 }

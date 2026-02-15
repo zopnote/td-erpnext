@@ -429,7 +429,7 @@ class DockerCompose {
   /// Stops and/or removes containers, networks, images, and volumes.
   static Step shutdown({
     required File? composeFile,
-    required String? projectName,
+    String? projectName,
     bool removeVolumes = false,
     bool removeImages = false,
     DockerOutputCallback? onCallback,
