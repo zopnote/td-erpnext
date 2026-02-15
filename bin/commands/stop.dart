@@ -3,26 +3,25 @@ import 'dart:io';
 import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/uninstall.dart';
+import 'package:td_erpnext/stop.dart';
 
-Future<Response> uninstallCommand(CommandInformation info) async {
+Future<Response> stopCommand(CommandInformation info) async {
   if (info.getFlag("help").value) {
     return Response(info.command.formatSyntax(spacer: 13), Level.normal);
   }
+  final Settings settings = Settings.load();
 
   final Response lastResponse = await runWorkflow(
-    Uninstall(
-      appDirectoryPath: settingsAtProgramStart.appDirectoryPath,
+    Stop(
+      appDirectoryPath: settings.appDirectoryPath,
       onCallback: (context, chars, error) => context.send(
         Response(
           String.fromCharCodes(chars),
           error ? Level.error : Level.normal,
         ),
       ),
-      backupsDirectoryPath: settingsAtProgramStart.backupDestinationPath,
-      removeBackups: info.getFlag("remove_backups").value,
     ),
-    (response) {
+        (response) {
       if (response.isError) {
         stderr.writeln(response.message);
         return;
@@ -30,5 +29,6 @@ Future<Response> uninstallCommand(CommandInformation info) async {
       stdout.writeln(response.message);
     },
   );
+
   return Response("", lastResponse.level);
 }

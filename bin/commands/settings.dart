@@ -23,6 +23,8 @@ Future<Response> settingsCommand(CommandInformation info) async {
   final dCN = info.getFlag(Settings.json(#dockerContainerName)) as TextFlag;
   final aDN = info.getFlag(Settings.json(#appDirectoryName)) as TextFlag;
   final lDN = info.getFlag(Settings.json(#logDirectoryName)) as TextFlag;
+  final bSP = info.getFlag(Settings.json(#backupSourcePath)) as TextFlag;
+  final bDP = info.getFlag(Settings.json(#backupDestinationPath)) as TextFlag;
 
   final Settings settings = Settings(
     connectionPort: cP.value,
@@ -30,8 +32,8 @@ Future<Response> settingsCommand(CommandInformation info) async {
     dockerContainerName: dCN.value,
     appDirectoryName: aDN.value,
     logDirectoryName: lDN.value,
-    backupSourcePath: settingsAtProgramStart.backupSourcePath,
-    backupDestinationPath: settingsAtProgramStart.backupDestinationPath,
+    backupSourcePath: bSP.value,
+    backupDestinationPath: bDP.value,
   );
 
   if (settings == settingsAtProgramStart) {

@@ -69,8 +69,9 @@ class Uninstall extends ConfigureStep {
             )
           ]),
         ),
-        LogASCIIContext("Remove systemd service..."),
-        Systemd.removeBoot(Settings.serviceName)
+        LogASCIIContext("Remove systemd services..."),
+        Systemd.removeBoot(Settings.serviceName),
+        Systemd.removeScheduler(Settings.serviceName),
       ],
     );
   }
