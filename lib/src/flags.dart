@@ -1,36 +1,54 @@
-import 'package:stepflow/io.dart';
+import 'package:natrix/core.dart';
 
-class IntFlag extends Flag<int> {
-  IntFlag({
-    required super.name,
+class IntFlag extends NatrixFlag<int> {
+  const IntFlag({
+    required super.id,
     required super.value,
-    super.description,
+    super.acronym,
     super.examples,
-  }) : super(parse: _parse, format: _format);
-  static String _format(int value) => value.toString();
-  static int _parse(String raw) => int.parse(raw);
+    super.tooltip,
+  });
+
+  @override
+  String format(int value) => value.toString();
+
+  @override
+  int parse(String raw) => int.parse(raw);
+
+  @override
+  NatrixFlag<int> set(int value) => IntFlag(
+    id: id,
+    value: value,
+    acronym: acronym,
+    tooltip: tooltip,
+    examples: examples,
+  );
 }
 
-class DurationFlag extends Flag<Duration> {
-  DurationFlag({
-    required super.name,
-    required super.value,
-    super.description,
+class DurationFlag extends NatrixFlag<Duration> {
+  const DurationFlag({
+    required super.id,
+    super.acronym,
     super.examples,
-  }) : super(parse: _parse, format: _format);
-  static String _format(Duration duration) {
+    super.tooltip,
+    required super.value,
+  });
+
+  @override
+  String format(Duration value) {
     List<String> parts = [];
-    if (duration.inDays > 0) parts.add("${duration.inDays}d");
-    int hours = duration.inHours % 24;
+    if (value.inDays > 0) parts.add("${value.inDays}d");
+    int hours = value.inHours % 24;
     if (hours > 0) parts.add("${hours}h");
-    int minutes = duration.inMinutes % 60;
+    int minutes = value.inMinutes % 60;
     if (minutes > 0) parts.add("${minutes}m");
-    int seconds = duration.inSeconds % 60;
+    int seconds = value.inSeconds % 60;
     if (seconds > 0) parts.add("${seconds}s");
     return parts.isEmpty ? "0s" : parts.join(":");
   }
 
-  static Duration _parse(String raw) {
+  @override
+  Duration parse(String raw) {
     final regex = RegExp(r"(\d+)([dhms])");
     final matches = regex.allMatches(raw.toLowerCase());
     int days = 0, hours = 0, minutes = 0, seconds = 0;
@@ -61,6 +79,17 @@ class DurationFlag extends Flag<Duration> {
       hours: hours,
       minutes: minutes,
       seconds: seconds,
+    );
+  }
+
+  @override
+  NatrixFlag<Duration> set(Duration value) {
+    return DurationFlag(
+      id: id,
+      tooltip: tooltip,
+      acronym: acronym,
+      examples: examples,
+      value: value,
     );
   }
 }

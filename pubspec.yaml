@@ -10,5 +10,6 @@ environment:
 
 dependencies:
   path: ^1.9.0
+  natrix: ^0.1.1
   stepflow: ^2.3.2
   yaml: ^3.1.0

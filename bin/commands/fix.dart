@@ -1,14 +1,14 @@
 import 'dart:io';
 
+import 'package:natrix/core.dart';
 import 'package:stepflow/core.dart';
-import 'package:stepflow/io.dart';
 import 'package:td_erpnext/src/create_directory.dart';
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/systemd.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
 
-Future<Response> fixCommand(CommandInformation info) async {
-  final bool resetSettings = info.getFlag("reset_settings").value;
+Future<void> fixCommand(NatrixCallbackOptions options) async {
+  final bool resetSettings = options.getFlag("reset_settings").value;
   final bool schedulerInstalled = Systemd.isSchedulerInstalled(
     Settings.serviceName,
   );
@@ -18,7 +18,7 @@ Future<Response> fixCommand(CommandInformation info) async {
   } else {
     schedulerDuration = null;
   }
-  final Response lastResponse = await runWorkflow(
+  await runWorkflow(
     Chain(
       steps: [
         Conditional(
@@ -75,7 +75,7 @@ Future<Response> fixCommand(CommandInformation info) async {
           ),
         ),
         LogASCIIContext(
-"""
+          """
 ${LogColor.cyanid("Applied some fixes.")}
 
 If nothing changed consider to backup your instance and reinstall the setup.
@@ -104,5 +104,4 @@ ${LogColor.cyanid("If your problem is now fixed, ignore these advises.")}
       stdout.writeln(response.message);
     },
   );
-  return Response("", lastResponse.level);
 }
