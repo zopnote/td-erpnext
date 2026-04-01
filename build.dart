@@ -13,7 +13,8 @@ Future<void> main() async => await runWorkflow(
     outDirectoryName: "out",
     readme: io.File(path.join((await projectRoot).path, "readme.md")),
     pubspec: io.File(path.join((await projectRoot).path, "pubspec.yaml")),
-  ), (response) {
+  ),
+  (response) {
     if (response.isError) {
       io.stderr.writeln(response.message);
       return;
@@ -21,7 +22,6 @@ Future<void> main() async => await runWorkflow(
     io.stdout.writeln(response.message);
   },
 );
-
 
 Future<io.Directory> get projectRoot async => await getProjectRoot();
 
@@ -112,20 +112,17 @@ class BuildWorkflow extends ConfigureStep {
           },
         ),
         Install(
-            binariesPath: projectRoot.path,
-            installPath: output.path,
-            files: [
-              "readme",
-              "license"
-            ]
+          binariesPath: projectRoot.path,
+          installPath: output.path,
+          files: ["readme", "license"],
         ),
         Runnable(
-              (context) => buildFinishCallback != null
+          (context) => buildFinishCallback != null
               ? buildFinishCallback!(
-            io.File(
-              "${path.join(output.path, "bin", pubspec.name)}$executableExtension",
-            ),
-          )
+                  io.File(
+                    "${path.join(output.path, "bin", pubspec.name)}$executableExtension",
+                  ),
+                )
               : null,
         ),
       ],
@@ -138,10 +135,10 @@ class CreateDirectory extends ConfigureStep {
   final bool recursive;
   final bool deleteIfExists;
   const CreateDirectory(
-      this.path, {
-        this.recursive = false,
-        this.deleteIfExists = false,
-      });
+    this.path, {
+    this.recursive = false,
+    this.deleteIfExists = false,
+  });
   @override
   Step configure() => Runnable((context) async {
     final bool exists = await io.Directory(path).exists();

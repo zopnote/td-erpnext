@@ -1,34 +1,39 @@
 import 'dart:io';
 
+import 'package:natrix/core.dart';
+import 'package:natrix/io.dart';
+import 'package:natrix/theme.dart';
+
 import 'package:stepflow/core.dart';
-import 'package:stepflow/io.dart';
+
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/stop.dart';
 
-Future<Response> stopCommand(CommandInformation info) async {
-  if (info.getFlag("help").value) {
-    return Response(info.command.formatSyntax(spacer: 13), Level.normal);
-  }
-  final Settings settings = Settings.load();
-
-  final Response lastResponse = await runWorkflow(
-    Stop(
-      appDirectoryPath: settings.appDirectoryPath,
-      onCallback: (context, chars, error) => context.send(
-        Response(
-          String.fromCharCodes(chars),
-          error ? Level.error : Level.normal,
+final NatrixCommand stopCommand = NatrixCommand(
+  id: "stop",
+  description: "Stops the running ERPNext-instance.",
+  callback: (options) async {
+    final NatrixStdio io = NatrixStdio();
+    final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
+    if (options.getFlag("help").value) {
+      io.writeLines(lines: theme.root.format());
+      return;
+    }
+    final Settings settings = Settings.load();
+    await runWorkflow(
+      Stop(
+        appDirectoryPath: settings.appDirectoryPath,
+        onCallback: (context, chars, error) => context.send(
+          Response(
+            String.fromCharCodes(chars),
+            error ? Level.error : Level.normal,
+          ),
         ),
       ),
-    ),
-        (response) {
-      if (response.isError) {
-        stderr.writeln(response.message);
-        return;
-      }
-      stdout.writeln(response.message);
-    },
-  );
-
-  return Response("", lastResponse.level);
-}
+      (response) => io.newLine(
+        text: NatrixText(response.message),
+        output: response.isError ? .stderr : .stdout,
+      ),
+    );
+  },
+);

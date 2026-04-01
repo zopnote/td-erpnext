@@ -7,7 +7,10 @@ import 'package:stepflow/io.dart';
 import 'package:td_erpnext/src/docker.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/src/systemd.dart';
+
+import 'src/systemd/systemd.dart';
+import 'src/systemd/autostart.dart';
+import 'src/systemd/schedule.dart';
 
 class Uninstall extends ConfigureStep {
   final DockerOutputCallback? onCallback;
@@ -70,8 +73,8 @@ class Uninstall extends ConfigureStep {
           ]),
         ),
         LogASCIIContext("Remove systemd services..."),
-        Systemd.removeBoot(Settings.serviceName),
-        Systemd.removeScheduler(Settings.serviceName),
+        Systemd.removeAutostart(Settings.serviceName),
+        Systemd.removeSchedule(Settings.serviceName),
       ],
     );
   }

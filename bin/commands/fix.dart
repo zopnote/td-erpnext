@@ -4,78 +4,80 @@ import 'package:natrix/core.dart';
 import 'package:stepflow/core.dart';
 import 'package:td_erpnext/src/create_directory.dart';
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/src/systemd.dart';
+import 'package:td_erpnext/src/systemd/systemd.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
 
-Future<void> fixCommand(NatrixCallbackOptions options) async {
-  final bool resetSettings = options.getFlag("reset_settings").value;
-  final bool schedulerInstalled = Systemd.isSchedulerInstalled(
-    Settings.serviceName,
-  );
-  late final Duration? schedulerDuration;
-  if (schedulerInstalled) {
-    schedulerDuration = Systemd.getSchedulerDuration(Settings.serviceName);
-  } else {
-    schedulerDuration = null;
-  }
-  await runWorkflow(
-    Chain(
-      steps: [
-        Conditional(
-          condition: schedulerInstalled,
-          child: Chain(
-            steps: [
-              LogASCIIContext("Reinstall systemd scheduler..."),
-              Systemd.removeScheduler(Settings.serviceName),
-              Systemd.setupScheduler(
-                serviceName: Settings.serviceName,
-                arguments: ["backups", "create"],
-                interval: schedulerDuration!,
-              ),
-            ],
+final NatrixCommand fixCommand = NatrixCommand(
+  id: "fix",
+  description: "Apply some fixes to encounter issues.",
+  flags: [
+    NatrixBoolFlag(
+      id: "reset",
+      tooltip: "Resets all settings and configuration.",
+      value: false,
+    ),
+  ],
+  callback: (final NatrixCallbackOptions options) async {
+    final bool resetSettings = options.getFlag("reset").value;
+    final Systemd systemd = Systemd(Settings.serviceName);
+    final bool hasSchedule = systemd.hasSchedule();
+
+    final Duration? schedule = hasSchedule ? systemd.getSchedule() : null;
+
+    await runWorkflow(
+      Chain(
+        steps: [
+          Conditional(
+            condition: hasSchedule,
+            child: Chain(
+              steps: [
+                LogASCIIContext("Reinstall systemd scheduler..."),
+                systemd.removeSchedule(),
+                systemd.setupSchedule(
+                  arguments: ["backups", "create"],
+                  interval: schedule!,
+                ),
+              ],
+            ),
           ),
-        ),
-        Conditional(
-          condition: Systemd.isBootInstalled(Settings.serviceName),
-          child: Chain(
-            steps: [
-              LogASCIIContext("Reinstall systemd boot service..."),
-              Systemd.removeBoot(Settings.serviceName),
-              Systemd.setupBoot(
-                serviceName: Settings.serviceName,
-                arguments: ["start"],
-              ),
-            ],
+          Conditional(
+            condition: systemd.hasAutostart(),
+            child: Chain(
+              steps: [
+                LogASCIIContext("Reinstall systemd boot service..."),
+                systemd.removeAutostart(),
+                systemd.setupAutostart(arguments: ["start"]),
+              ],
+            ),
           ),
-        ),
-        Conditional(
-          condition:
-              !File(Settings.configurationFilePath).existsSync() ||
-              resetSettings,
-          child: Chain(
-            steps: [
-              LogASCIIContext("Create new configuration file..."),
-              Runnable((context) => Settings().dump()),
-            ],
+          Conditional(
+            condition:
+                !File(Settings.configurationFilePath).existsSync() ||
+                resetSettings,
+            child: Chain(
+              steps: [
+                LogASCIIContext("Create new configuration file..."),
+                Runnable((context) => Settings().dump()),
+              ],
+            ),
           ),
-        ),
-        Conditional(
-          condition: !Directory(
-            settingsAtProgramStart.appDirectoryPath,
-          ).existsSync(),
-          child: Chain(
-            steps: [
-              LogASCIIContext("Create app directory..."),
-              CreateDirectory(
-                settingsAtProgramStart.appDirectoryPath,
-                recursive: true,
-                deleteIfExists: true,
-              ),
-            ],
+          Conditional(
+            condition: !Directory(
+              settingsAtProgramStart.appDirectoryPath,
+            ).existsSync(),
+            child: Chain(
+              steps: [
+                LogASCIIContext("Create app directory..."),
+                CreateDirectory(
+                  settingsAtProgramStart.appDirectoryPath,
+                  recursive: true,
+                  deleteIfExists: true,
+                ),
+              ],
+            ),
           ),
-        ),
-        LogASCIIContext(
-          """
+          LogASCIIContext(
+            """
 ${LogColor.cyanid("Applied some fixes.")}
 
 If nothing changed consider to backup your instance and reinstall the setup.
@@ -91,17 +93,18 @@ ${LogColor.grayed("(Don't forget to adjust the settings after this reinstallatio
 ${LogColor.cyanid("If your problem is now fixed, ignore these advises.")}
 
 """,
-          color: LogColor.white,
-          level: Level.normal,
-        ),
-      ],
-    ),
-    (response) {
-      if (response.isError) {
-        stderr.writeln(response.message);
-        return;
-      }
-      stdout.writeln(response.message);
-    },
-  );
-}
+            color: LogColor.white,
+            level: Level.normal,
+          ),
+        ],
+      ),
+      (response) {
+        if (response.isError) {
+          stderr.writeln(response.message);
+          return;
+        }
+        stdout.writeln(response.message);
+      },
+    );
+  },
+);
