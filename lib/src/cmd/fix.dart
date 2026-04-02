@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:natrix/core.dart';
 import 'package:stepflow/core.dart';
-import 'package:td_erpnext/src/create_directory.dart';
+import 'package:td_erpnext/src/#/create_directory.dart';
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/systemd/systemd.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
@@ -19,7 +19,7 @@ final NatrixCommand fixCommand = NatrixCommand(
   ],
   callback: (final NatrixCallbackOptions options) async {
     final bool resetSettings = options.getFlag("reset").value;
-    final Systemd systemd = Systemd(Settings.serviceName);
+    final Systemd systemd = Systemd.get();
     final bool hasSchedule = systemd.hasSchedule();
 
     final Duration? schedule = hasSchedule ? systemd.getSchedule() : null;

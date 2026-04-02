@@ -1,3 +1,5 @@
+import 'package:td_erpnext/src/settings.dart';
+
 export 'autostart.dart';
 export 'schedule.dart';
 
@@ -12,12 +14,16 @@ export 'schedule.dart';
 ///    when to trigger a specific service.
 final class Systemd {
   final String serviceName;
-  const Systemd(this.serviceName);
+  static late final Systemd _instance;
+  static bool initialized = false;
+  Systemd._internal(this.serviceName) {
+    _instance = this;
+    initialized = true;
+  }
+  factory Systemd.get() =>
+      initialized ? _instance : Systemd._internal(Settings.serviceName);
 
-  String recurringService(
-    String executablePath,
-    String argument
-  ) =>
+  String recurringService(String executablePath, String argument) =>
       """
 [Unit]
 Description=Recurring service for $serviceName
@@ -43,10 +49,7 @@ Persistent=true
 WantedBy=timers.target
 """;
 
-  String bootService(
-    String exePath,
-    String argument,
-  ) =>
+  String bootService(String exePath, String argument) =>
       """
 [Unit]
 Description=Boot service for $serviceName

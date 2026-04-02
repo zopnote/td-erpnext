@@ -4,24 +4,11 @@ import 'package:natrix/core.dart';
 import 'package:natrix/io.dart';
 import 'package:natrix/theme.dart';
 
+import 'package:td_erpnext/cmd.dart';
+
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/flags.dart';
-import 'package:td_erpnext/src/systemd/systemd.dart';
 
-import 'commands/status.dart';
-import 'commands/settings.dart';
-import 'commands/setup.dart';
-import 'commands/uninstall.dart';
-import 'commands/fix.dart';
-import 'commands/stop.dart';
-import 'commands/start.dart';
-
-import 'commands/backups.dart';
-import 'commands/backups/create.dart';
-import 'commands/backups/list.dart';
-import 'commands/backups/off.dart';
-import 'commands/backups/on.dart';
-import 'commands/backups/restore.dart';
 
 List<NatrixFlag> get settingFlags {
   return [

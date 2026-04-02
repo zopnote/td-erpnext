@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:natrix/core.dart';
+import 'package:natrix/io.dart';
+import 'package:natrix/theme.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:stepflow/io.dart';
@@ -13,14 +15,24 @@ final NatrixCommand backupsListCommand = NatrixCommand(
   description: "Lists all available backups.",
   inheritFlags: true,
   callback: (NatrixCallbackOptions options) async {
+    final NatrixStdio io = NatrixStdio();
+    final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
+    if (options.getFlag("help").value) {
+      io.writeLines(lines: theme.root.format());
+      return;
+    }
     final String backupPath = settingsAtProgramStart.backupDestinationPath;
     final directory = Directory(backupPath);
 
     if (!directory.existsSync()) {
-      return Response(
-        "Backup directory does not exist: $backupPath",
-        Level.warning,
+      io.newLine(
+        text: NatrixText(
+          "Backup directory does not exist: $backupPath",
+          foreground: .red,
+        ),
+        output: .stderr,
       );
+      return;
     }
 
     final List<FileSystemEntity> entities = directory
@@ -32,7 +44,11 @@ final NatrixCommand backupsListCommand = NatrixCommand(
     ); // Sort by name descending (latest first)
 
     if (entities.isEmpty) {
-      return Response("No backups found in $backupPath");
+      io.newLine(
+        text: NatrixText("No backups found in $backupPath", foreground: .red),
+        output: .stderr,
+      );
+      return;
     }
 
     final StringBuffer buffer = StringBuffer();
@@ -92,6 +108,6 @@ final NatrixCommand backupsListCommand = NatrixCommand(
       }
     }
 
-    return Response(buffer.toString());
+    io.newLine(text: NatrixText(buffer.toString()), output: .stdout);
   },
 );

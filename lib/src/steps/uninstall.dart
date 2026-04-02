@@ -1,16 +1,12 @@
-
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
-import 'package:td_erpnext/src/docker.dart';
+import 'package:td_erpnext/src/steps/docker.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
-import 'package:td_erpnext/src/settings.dart';
 
-import 'src/systemd/systemd.dart';
-import 'src/systemd/autostart.dart';
-import 'src/systemd/schedule.dart';
+import '../systemd/systemd.dart';
 
 class Uninstall extends ConfigureStep {
   final DockerOutputCallback? onCallback;
@@ -35,8 +31,8 @@ class Uninstall extends ConfigureStep {
     if (removeBackups && backupsDirectoryPath.isEmpty) {
       throw Exception(
         "If you want to remove backups, "
-            "you have to specify the backups directory "
-            "in order to get it removed.",
+        "you have to specify the backups directory "
+        "in order to get it removed.",
       );
     }
     final String composeFilePath = path.join(
@@ -62,19 +58,23 @@ class Uninstall extends ConfigureStep {
         ),
         Conditional(
           condition: removeBackups,
-          child: Chain(steps: [
-            LogASCIIContext("Remove $backupsDirectoryPath..."),
-            Shell(
-              program: "rm",
-              arguments: ["-r", "f", backupsDirectoryPath],
-              onStderr: (context, chars) => _grayedCallback(context, chars, true),
-              onStdout: (context, chars) => _grayedCallback(context, chars, false),
-            )
-          ]),
+          child: Chain(
+            steps: [
+              LogASCIIContext("Remove $backupsDirectoryPath..."),
+              Shell(
+                program: "rm",
+                arguments: ["-r", "f", backupsDirectoryPath],
+                onStderr: (context, chars) =>
+                    _grayedCallback(context, chars, true),
+                onStdout: (context, chars) =>
+                    _grayedCallback(context, chars, false),
+              ),
+            ],
+          ),
         ),
         LogASCIIContext("Remove systemd services..."),
-        Systemd.removeAutostart(Settings.serviceName),
-        Systemd.removeSchedule(Settings.serviceName),
+        Systemd.get().removeAutostart(),
+        Systemd.get().removeSchedule(),
       ],
     );
   }

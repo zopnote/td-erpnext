@@ -1,11 +1,12 @@
 import 'dart:io';
 
 import 'package:natrix/core.dart';
+import 'package:natrix/io.dart';
+import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
-import 'package:stepflow/io.dart';
+
 import 'package:td_erpnext/src/flags.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
-import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/systemd/systemd.dart';
 
 import 'backups/on.dart';
@@ -14,14 +15,16 @@ import 'backups/create.dart';
 import 'backups/restore.dart';
 import 'backups/list.dart';
 
+final Systemd _systemd = Systemd.get();
+
 final NatrixCommand backupsCommand = NatrixCommand(
   id: "backups",
   description: "Manage backups.",
   flags: [
     DurationFlag(
       id: "interval",
-      value: Systemd.hasSchedule(Settings.serviceName)
-          ? Systemd.getSchedule(Settings.serviceName)
+      value: _systemd.hasSchedule()
+          ? _systemd.getSchedule()
           : Duration(days: 2),
       examples: [
         Duration(days: 1, hours: 12, minutes: 45),
@@ -38,38 +41,30 @@ final NatrixCommand backupsCommand = NatrixCommand(
     backupsListCommand,
   ],
   callback: (NatrixCallbackOptions options) async {
-    final bP = options.getFlag("interval") as DurationFlag;
+    final NatrixStdio io = NatrixStdio();
+    final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
+    if (options.getFlag("help").value) {
+      io.writeLines(lines: theme.root.format());
+      return;
+    }
+    final interval = options.getFlag("interval") as DurationFlag;
 
     bool changedSchedulerDuration =
-        Systemd.hasSchedule(Settings.serviceName) &&
-        Systemd.getSchedule(Settings.serviceName) != bP.value;
+        _systemd.hasSchedule() && _systemd.getSchedule() != interval.value;
 
     if (changedSchedulerDuration) {
-      final Response lastResponse = await runWorkflow(
-        Systemd.updateSchedule(
-          serviceName: Settings.serviceName,
-          interval: bP.value,
+      await runWorkflow(
+        _systemd.updateSchedule(interval: interval.value),
+        (response) => io.newLine(
+          text: NatrixText(response.message),
+          output: response.isError ? .stderr : .stdout,
         ),
-        (response) {
-          if (response.isError) {
-            stderr.writeln(response.message);
-            return;
-          }
-          stdout.writeln(response.message);
-        },
       );
-      stdout.writeln("Updated backup schedule to ${bP.getFormatted()}.");
-
-      if (lastResponse.isError) {
-        return Response("An error occurred.", Level.critical);
-      }
+      stdout.writeln("Updated backup schedule to ${interval.getFormatted()}.");
     }
 
-    if (!Systemd.hasSchedule(Settings.serviceName)) {
+    if (!_systemd.hasSchedule()) {
       stdout.writeln(LogColor.yellowed("Backups are currently disabled."));
     }
-
-    if (changedSchedulerDuration) return Response();
-    return Response(info.command.formatSyntax(spacer: 15), Level.normal);
   },
 );

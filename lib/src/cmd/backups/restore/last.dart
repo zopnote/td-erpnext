@@ -1,19 +1,14 @@
-import 'dart:io';
-
 import 'package:natrix/core.dart';
 import 'package:natrix/io.dart';
 import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
-import 'package:stepflow/io.dart';
+import 'package:td_erpnext/src/steps/restore.dart';
+import 'package:td_erpnext/src/steps/docker.dart';
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/uninstall.dart';
 
-final NatrixCommand uninstallCommand = NatrixCommand(
-  id: "uninstall",
-  description: "Removes the installation securely.",
-  flags: [
-    NatrixBoolFlag(id: "hard", tooltip: "Deletes all backups.", value: false),
-  ],
+final NatrixCommand backupsRestoreLastCommand = NatrixCommand(
+  id: "last",
+  description: "Restores the last backup.",
   callback: (options) async {
     final NatrixStdio io = NatrixStdio();
     final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
@@ -21,11 +16,15 @@ final NatrixCommand uninstallCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
+
     await runWorkflow(
-      Uninstall(
+      ERPNextRestore(
+        container: DockerContainer(settingsAtProgramStart.dockerContainerName),
+        restoreLast: true,
         appDirectoryPath: settingsAtProgramStart.appDirectoryPath,
+        currentSiteName: settingsAtProgramStart.currentSite,
         backupsDirectoryPath: settingsAtProgramStart.backupDestinationPath,
-        removeBackups: options.getFlag("hard").value,
+        workingDirectory: settingsAtProgramStart.appDirectoryPath,
         onCallback: (context, chars, error) => context.send(
           Response(
             String.fromCharCodes(chars),
