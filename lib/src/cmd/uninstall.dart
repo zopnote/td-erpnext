@@ -5,7 +5,7 @@ import 'package:natrix/io.dart';
 import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/uninstall.dart';
+import 'package:td_erpnext/src/steps/uninstall.dart';
 
 final NatrixCommand uninstallCommand = NatrixCommand(
   id: "uninstall",
@@ -20,10 +20,12 @@ final NatrixCommand uninstallCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
+
+    final Settings settings = Settings.load();
     await runWorkflow(
       Uninstall(
-        appDirectoryPath: settingsAtProgramStart.appDirectoryPath,
-        backupsDirectoryPath: settingsAtProgramStart.backupDestinationPath,
+        appDirectoryPath: settings.appDirectoryPath,
+        backupsDirectoryPath: settings.backupDestinationPath.value,
         removeBackups: options.getFlag("hard").value,
         onCallback: (context, chars, error) => context.send(
           Response(

@@ -1,17 +1,16 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:natrix/core.dart';
 import 'package:natrix/io.dart';
 import 'package:natrix/theme.dart';
+
 import 'package:stepflow/core.dart';
-import 'package:stepflow/io.dart';
+import 'package:stepflow/src/io/steps/log_print.dart';
+
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/steps/setup.dart';
 import 'package:td_erpnext/src/steps/docker.dart';
-import 'package:stepflow/src/io/steps/log_print.dart';
-import 'package:td_erpnext/src/flags.dart';
-import 'package:td_erpnext/src/systemd/systemd.dart';
+import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 final NatrixCommand setupCommand = NatrixCommand(
   id: "setup",
@@ -41,7 +40,7 @@ final NatrixCommand setupCommand = NatrixCommand(
           ),
           LogASCIIContext("Set restart policy of container..."),
           Docker.update(
-            containers: [DockerContainer(settings.dockerContainerName)],
+            containers: [DockerContainer(settings.dockerContainerName.value)],
             settings: DockerUpdateSettings(restart: DockerRestartPolicy.no),
           ),
           LogASCIIContext("Add systemd boot service..."),

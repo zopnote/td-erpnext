@@ -7,7 +7,7 @@ import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
 
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/stop.dart';
+import 'package:td_erpnext/src/steps/stop.dart';
 
 final NatrixCommand stopCommand = NatrixCommand(
   id: "stop",

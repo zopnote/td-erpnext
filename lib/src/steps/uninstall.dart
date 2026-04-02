@@ -5,8 +5,7 @@ import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
 import 'package:td_erpnext/src/steps/docker.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
-
-import '../systemd/systemd.dart';
+import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 class Uninstall extends ConfigureStep {
   final DockerOutputCallback? onCallback;

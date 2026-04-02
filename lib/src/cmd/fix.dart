@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:natrix/core.dart';
 import 'package:stepflow/core.dart';
-import 'package:td_erpnext/src/#/create_directory.dart';
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/src/systemd/systemd.dart';
+import 'package:td_erpnext/src/steps/create_directory.dart';
+import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
 
 final NatrixCommand fixCommand = NatrixCommand(
@@ -17,13 +17,13 @@ final NatrixCommand fixCommand = NatrixCommand(
       value: false,
     ),
   ],
-  callback: (final NatrixCallbackOptions options) async {
+  callback: (options) async {
     final bool resetSettings = options.getFlag("reset").value;
     final Systemd systemd = Systemd.get();
     final bool hasSchedule = systemd.hasSchedule();
 
     final Duration? schedule = hasSchedule ? systemd.getSchedule() : null;
-
+    final Settings settings = Settings.load();
     await runWorkflow(
       Chain(
         steps: [
@@ -57,19 +57,19 @@ final NatrixCommand fixCommand = NatrixCommand(
             child: Chain(
               steps: [
                 LogASCIIContext("Create new configuration file..."),
-                Runnable((context) => Settings().dump()),
+                Runnable((context) => Settings.base().dump()),
               ],
             ),
           ),
           Conditional(
             condition: !Directory(
-              settingsAtProgramStart.appDirectoryPath,
+              settings.appDirectoryPath,
             ).existsSync(),
             child: Chain(
               steps: [
                 LogASCIIContext("Create app directory..."),
                 CreateDirectory(
-                  settingsAtProgramStart.appDirectoryPath,
+                  settings.appDirectoryPath,
                   recursive: true,
                   deleteIfExists: true,
                 ),

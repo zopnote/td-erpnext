@@ -16,15 +16,16 @@ final NatrixCommand backupsRestoreLastCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
+    final Settings settings = Settings.load();
 
     await runWorkflow(
       ERPNextRestore(
-        container: DockerContainer(settingsAtProgramStart.dockerContainerName),
+        container: DockerContainer(settings.dockerContainerName.value),
         restoreLast: true,
-        appDirectoryPath: settingsAtProgramStart.appDirectoryPath,
-        currentSiteName: settingsAtProgramStart.currentSite,
-        backupsDirectoryPath: settingsAtProgramStart.backupDestinationPath,
-        workingDirectory: settingsAtProgramStart.appDirectoryPath,
+        appDirectoryPath: settings.appDirectoryPath,
+        currentSiteName: settings.currentSite.value,
+        backupsDirectoryPath: settings.backupDestinationPath.value,
+        workingDirectory: settings.appDirectoryPath,
         onCallback: (context, chars, error) => context.send(
           Response(
             String.fromCharCodes(chars),

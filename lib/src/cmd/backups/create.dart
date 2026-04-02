@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:natrix/core.dart';
 import 'package:natrix/io.dart';
 import 'package:natrix/theme.dart';
+
 import 'package:stepflow/core.dart';
 
 import 'package:td_erpnext/src/steps/backup.dart';
@@ -13,7 +14,7 @@ final NatrixCommand backupsCreateCommand = NatrixCommand(
   id: "create",
   description: "Creates a backup.",
   inheritFlags: false,
-  callback: (NatrixCallbackOptions options) async {
+  callback: (options) async {
     final NatrixStdio io = NatrixStdio();
     final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
     if (options.getFlag("help").value) {
@@ -21,16 +22,17 @@ final NatrixCommand backupsCreateCommand = NatrixCommand(
       return;
     }
 
+    final Settings settings = Settings.load();
     await runWorkflow(
       Chain(
         steps: [
           ERPNextBackup(
             container: DockerContainer(
-              settingsAtProgramStart.dockerContainerName,
+              settings.dockerContainerName.value,
             ),
-            currentSiteName: settingsAtProgramStart.currentSite,
-            backupSourcePath: settingsAtProgramStart.backupSourcePath,
-            backupDestinationPath: settingsAtProgramStart.backupDestinationPath,
+            currentSiteName: settings.currentSite.value,
+            backupSourcePath: settings.backupSourcePath.value,
+            backupDestinationPath: settings.backupDestinationPath.value,
             onCallback: (context, chars, error) => context.send(
               Response(
                 String.fromCharCodes(chars),

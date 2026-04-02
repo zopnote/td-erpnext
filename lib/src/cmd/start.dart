@@ -7,7 +7,7 @@ import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
 
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/start.dart';
+import 'package:td_erpnext/src/steps/start.dart';
 
 final NatrixCommand startCommand = NatrixCommand(
   id: "start",

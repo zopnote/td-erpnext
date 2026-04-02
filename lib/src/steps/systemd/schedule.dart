@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
-import 'package:td_erpnext/src/systemd/systemd.dart';
+import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 extension SystemdScheduleExtension on Systemd {
   /// Removes the systemd scheduler (timer and service) with the given [serviceName].

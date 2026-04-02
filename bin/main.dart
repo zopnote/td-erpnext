@@ -2,76 +2,8 @@ import 'dart:io';
 
 import 'package:natrix/core.dart';
 import 'package:natrix/io.dart';
-import 'package:natrix/theme.dart';
 
 import 'package:td_erpnext/cmd.dart';
-
-import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/src/flags.dart';
-
-
-List<NatrixFlag> get settingFlags {
-  return [
-    NextIntFlag(
-      id: Settings.json(#connectionPort),
-      tooltip:
-          "Sets the port this manager tries to connect "
-          "to of the frontend of the running erpnext"
-          "in the docker container.",
-      value: settingsAtProgramStart.connectionPort,
-    ),
-    NatrixTextFlag(
-      id: Settings.json(#currentSite),
-      tooltip:
-          "Sets the current site this manager tries "
-          "to connect to of the frontend of the running "
-          "erpnext in the docker container.",
-      value: settingsAtProgramStart.currentSite,
-    ),
-    NatrixTextFlag(
-      id: Settings.json(#dockerContainerName),
-      tooltip:
-          "Sets the docker container id this manager tries "
-          "to connect to of the frontend of the running "
-          "erpnext in the docker container.",
-      value: settingsAtProgramStart.dockerContainerName,
-    ),
-    NatrixTextFlag(
-      id: Settings.json(#appDirectoryName),
-      tooltip:
-          "Location relative to the apps root where the data "
-          "files and directories of the working process are stored.",
-      value: settingsAtProgramStart.appDirectoryName,
-    ),
-    NatrixTextFlag(
-      id: Settings.json(#logDirectoryName),
-      tooltip:
-          "Location relative to the apps root where the log "
-          "files of the working process are stored.",
-      value: settingsAtProgramStart.logDirectoryName,
-    ),
-    NatrixTextFlag(
-      id: Settings.json(#dbRootPassword),
-      tooltip: "The root password of the database of the erpnext installation.",
-      value: settingsAtProgramStart.dbRootPassword,
-    ),
-    NatrixTextFlag(
-      id: Settings.json(#backupSourcePath),
-      tooltip:
-          "Sets the backup source directory where backups "
-          "will be retrieved from. The entire path is in the corresponding "
-          "docker container.",
-      value: settingsAtProgramStart.backupSourcePath,
-    ),
-    NatrixTextFlag(
-      id: Settings.json(#backupDestinationPath),
-      tooltip:
-          "Sets the backup directory where backups get stored. "
-          "Path in the filesystem.",
-      value: settingsAtProgramStart.backupDestinationPath,
-    ),
-  ];
-}
 
 Future<void> main(List<String> arguments) async {
   final String? user = Platform.environment['USER'];
@@ -94,36 +26,7 @@ Future<void> main(List<String> arguments) async {
   }
   final NatrixPipeline pipeline = NatrixPipeline(
     arguments: arguments,
-    globalFlags: [
-      NatrixBoolFlag(
-        id: "help",
-        acronym: NatrixChar('h'),
-        value: false,
-        tooltip: "Displays usage information.",
-      ),
-    ],
+    globalFlags: globalFlags,
   );
-  pipeline.run(
-    NatrixCommand(
-      id: "td-erpnext",
-      description:
-          "Tool for automize backups and the management of the erpnext service under linux.",
-      hidden: true,
-      inheritFlags: false,
-      children: [
-        fixCommand,
-        startCommand,
-        stopCommand,
-        statusCommand,
-        uninstallCommand,
-        setupCommand,
-        settingsCommand,
-        backupsCommand,
-      ],
-      callback: (options) {
-        final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
-        NatrixStdio().writeLines(lines: theme.root.format());
-      },
-    ),
-  );
+  return pipeline.run(rootCommand);
 }

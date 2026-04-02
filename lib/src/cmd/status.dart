@@ -9,7 +9,7 @@ import 'package:path/path.dart' as path;
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/steps/docker.dart';
 import 'package:td_erpnext/src/flags.dart';
-import 'package:td_erpnext/src/systemd/systemd.dart';
+import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 final NatrixCommand statusCommand = NatrixCommand(
   id: "status",

@@ -6,7 +6,7 @@ import 'package:stepflow/io.dart';
 import 'package:stepflow/core.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
 
-import 'package:td_erpnext/src/package:td_erpnext/src/#/create_directory.dart';
+import 'package:td_erpnext/src/steps/create_directory.dart';
 import 'package:td_erpnext/src/steps/docker.dart';
 
 class ERPNextSetup extends ConfigureStep {

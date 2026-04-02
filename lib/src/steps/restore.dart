@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -58,7 +57,9 @@ class ERPNextRestore extends ConfigureStep {
       );
     }
 
-    String backupBundlePath = backupBundleName != null ? path.join(backupsDirectoryPath, backupBundleName) : "";
+    String backupBundlePath = backupBundleName != null
+        ? path.join(backupsDirectoryPath, backupBundleName)
+        : "";
 
     if (!Directory(backupBundlePath).existsSync() && backupBundleName != null) {
       return LogASCIIContext(
@@ -76,10 +77,10 @@ class ERPNextRestore extends ConfigureStep {
       final backupsDirectory = Directory(backupsDirectoryPath);
       if (backupsDirectory.existsSync()) {
         final List<FileSystemEntity> entities =
-        backupsDirectory.listSync().whereType<Directory>().toList()..sort(
-          // Sort by name descending (ISO date)
+            backupsDirectory.listSync().whereType<Directory>().toList()..sort(
+              // Sort by name descending (ISO date)
               (a, b) => b.path.compareTo(a.path),
-        );
+            );
         if (entities.isNotEmpty) {
           backupBundlePath = entities.first.path;
         }
@@ -119,6 +120,7 @@ Start to restore backup...
 """);
     final String restorableBackupsPathOnContainer = "/home/frappe/restorable/";
 
+    final Settings settings = Settings.load();
     return Chain(
       steps: [
         LogASCIIContext("Stop containers..."),
@@ -171,7 +173,7 @@ Start to restore backup...
         // 4. Restore bench backup (to fix potential DB corruption)
         Conditional(
           condition:
-          sqlFile != null || privateFile != null || publicFile != null,
+              sqlFile != null || privateFile != null || publicFile != null,
           child: Chain(
             steps: [
               LogASCIIContext("Restore bench files..."),
@@ -244,9 +246,9 @@ Start to restore backup...
                     restorableBackupsPathOnContainer,
                     path.basename(sqlFile ?? ""),
                   ),
-                  if (settingsAtProgramStart.dbRootPassword.isNotEmpty) ...[
+                  if (settings.dbRootPassword.value.isNotEmpty) ...[
                     "--mariadb-root-password",
-                    settingsAtProgramStart.dbRootPassword,
+                    settings.dbRootPassword.value,
                   ],
                   "--with-private-files",
                   path.join(

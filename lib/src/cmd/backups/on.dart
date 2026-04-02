@@ -7,8 +7,8 @@ import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
 
 import 'package:td_erpnext/src/flags.dart';
+import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
-import 'package:td_erpnext/src/systemd/systemd.dart';
 
 final NatrixCommand backupsEnableCommand = NatrixCommand(
   id: "on",
