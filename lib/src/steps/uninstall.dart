@@ -5,6 +5,7 @@ import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
 import 'package:td_erpnext/src/steps/docker.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/remove_schedule.dart';
 import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 class Uninstall extends ConfigureStep {
@@ -73,7 +74,7 @@ class Uninstall extends ConfigureStep {
         ),
         LogASCIIContext("Remove systemd services..."),
         Systemd.get().removeAutostart(),
-        Systemd.get().removeSchedule(),
+        Systemd.get().removeSchedule(RemoveScheduleSettings()),
       ],
     );
   }

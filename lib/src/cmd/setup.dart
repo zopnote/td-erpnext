@@ -23,7 +23,7 @@ final NatrixCommand setupCommand = NatrixCommand(
       return;
     }
     final Systemd systemd = Systemd.get();
-    final Settings settings = Settings.load();
+    final Settings settings = Settings.fromDisk();
 
     await runWorkflow(
       Chain(
@@ -40,11 +40,11 @@ final NatrixCommand setupCommand = NatrixCommand(
           ),
           LogASCIIContext("Set restart policy of container..."),
           Docker.update(
-            containers: [DockerContainer(settings.dockerContainerName.value)],
-            settings: DockerUpdateSettings(restart: DockerRestartPolicy.no),
+            containers: [DockerContainer(settings.frontendContainer.value)],
+            config: DockerUpdateSettings(restart: DockerRestartPolicy.no),
           ),
           LogASCIIContext("Add systemd boot service..."),
-          systemd.setupAutostart(arguments: ["start"]),
+          systemd.setupAutostart(args: ["start"]),
         ],
       ),
       (response) => io.newLine(

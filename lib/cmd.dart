@@ -29,6 +29,9 @@ final NatrixCommand rootCommand = NatrixCommand(
       "management of the erpnext service under linux.",
   hidden: true,
   inheritFlags: false,
+  flags: [
+    NatrixTextFlag(id: "asd")
+  ],
   children: [
     fixCommand,
     startCommand,

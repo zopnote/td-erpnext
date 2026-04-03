@@ -7,42 +7,26 @@ import 'package:path/path.dart' as path;
 final class Settings {
   /// Sets the port this manager tries to connect to of the
   /// frontend of the running erpnext in the docker container.
-  final Setting<int> connectionPort;
+  final Setting<int> port;
 
   /// Sets the current site this manager tries to connect to
   /// of the frontend of the running erpnext in the docker container.
-  final Setting<String> currentSite;
+  final Setting<String> frontendSite;
 
   /// Sets the docker container name this manager tries to connect
   /// to of the frontend of the running erpnext in the docker container.
-  final Setting<String> dockerContainerName;
+  final Setting<String> frontendContainer;
 
-  /// Location relative to the apps root where the data files and
-  /// directories of the working process are stored.
-  final Setting<String> appDirectoryName;
-
-  /// The backup source directory is the location where backups
-  /// will be retrieved from. The entire path is in the corresponding
-  /// docker container.
-  final Setting<String> logDirectoryName;
-
-  /// The backup directory is the location where backups will be stored.
-  /// The entire path is in the corresponding docker container.
-  final DependingSetting backupSourcePath;
+  /// Sets the docker container name this manager tries to connect
+  /// to of the frontend of the running erpnext in the docker container.
+  final Setting<String> backendContainer;
 
   /// Location relative to the apps root where the log
   /// files of the working process are stored.
-  final Setting<String> backupDestinationPath;
+  final Setting<String> backupStoragePath;
 
   /// The root password of the database of the erpnext installation.
-  final Setting<String> dbRootPassword;
-
-  /// The location where the erpnext, the docker image and process files are located.
-  String get appDirectoryPath =>
-      path.join(rootDirectoryPath, appDirectoryName.value);
-
-  //__________________________________________________________________________________________________________
-  // v HARD CODED PARAMETER
+  final Setting<String> databasePassword;
 
   /// Name of the systemd services installed by this application.
   static String get serviceName => "td_erpnext";
@@ -54,6 +38,17 @@ final class Settings {
   static String get configurationFilePath =>
       path.join(rootDirectoryPath, settingsFileName);
 
+  /// Location relative to the apps root where the log files are stored.
+  static String get logDirectoryName => "log";
+
+  /// Location relative to the apps root where the data files and
+  /// directories of the working process are stored.
+  static String get appDirectoryName => "app";
+
+  /// The location where the erpnext, the docker image and process files are located.
+  static String get appDirectoryPath =>
+      path.join(rootDirectoryPath, appDirectoryName);
+
   /// The location where the binaries are located.
   static String get binDirectoryPath => path.dirname(Platform.script.path);
 
@@ -63,81 +58,58 @@ final class Settings {
   /// The name of the binary directory inside the app bundles root.
   static String get binDirectoryName => path.basename(binDirectoryPath);
 
-  // ^ HARD CODED PARAMETER
-  //__________________________________________________________________________________________________________
-
-  factory Settings.new({
-    required String? currentSite,
-    required int? connectionPort,
-    required String? dockerContainerName,
-    required String? appDirectoryName,
-    required String? logDirectoryName,
-    required String? backupSourcePath,
-    required String? backupDestinationPath,
-    required String? dbRootPassword,
+  factory Settings._build({
+    required String? frontendSite,
+    required int? port,
+    required String? frontendContainer,
+    required String? backendContainer,
+    required String? backupStoragePath,
+    required String? databasePassword,
   }) {
-    final Setting<String> _currentSite = Setting(
-      key: "current_site",
-      value: currentSite ?? "frontend",
-      description:
-          "Sets the current site this manager tries "
-          "to connect to of the frontend of the running "
-          "erpnext in the docker container.",
-    );
     return Settings._internal(
-      connectionPort: Setting(
-        key: "connect_port",
-        value: connectionPort ?? 8080,
+      port: Setting(
+        key: "port",
+        value: port ?? 8080,
         description:
-            "Sets the port this manager tries to connect "
+            "The port this manager tries to connect "
             "to of the frontend of the running erpnext"
             "in the docker container.",
       ),
-      currentSite: _currentSite,
-      dockerContainerName: Setting(
-        key: "docker_container",
-        value: dockerContainerName ?? "frappe_docker_frontend_1",
+      frontendSite: Setting(
+        key: "site",
+        value: frontendSite ?? "frontend",
         description:
-            "Sets the docker container id this manager tries "
+            "Sets the current site this manager tries "
             "to connect to of the frontend of the running "
             "erpnext in the docker container.",
       ),
-      appDirectoryName: Setting(
-        key: "app_directory",
-        value: appDirectoryName ?? "erpnext",
+      frontendContainer: Setting(
+        key: "frontend_container",
+        value: frontendContainer ?? "frappe_docker_frontend_1",
         description:
-            "Location relative to the apps root where the data "
-            "files and directories of the working process are stored.",
+            "The docker container id this manager tries "
+            "to connect to of the frontend of the running "
+            "erpnext in the docker container.",
       ),
-      logDirectoryName: Setting(
-        key: "log_directory",
-        value: logDirectoryName ?? "logs",
+      backendContainer: Setting(
+        key: "backend_container",
+        value: backendContainer ?? "frappe_docker_backend_1",
         description:
-            "Location relative to the apps root where the log "
-            "files of the working process are stored.",
+            "The docker container id this manager tries "
+            "to connect to of the backend of the running "
+            "erpnext in the docker container.",
       ),
-      backupSourcePath: DependingSetting(
-        key: "backup_src",
-        value:
-            backupSourcePath ??
-            "/home/frappe/frappe-bench/sites/<erpnext_site_name>/private/backups",
-        dependency: () => _currentSite.value,
-        placeholder: "<erpnext_site_name>",
+
+      backupStoragePath: Setting(
+        key: "backup_storage",
+        value: backupStoragePath ?? "/var/backups/erpnext",
         description:
-            "Sets the backup source directory where backups "
-            "will be retrieved from. The entire path is in the corresponding "
-            "docker container.",
-      ),
-      backupDestinationPath: Setting(
-        key: "backup_dist",
-        value: backupDestinationPath ?? "/var/backups/erpnext",
-        description:
-            "Sets the backup directory where backups get stored. "
+            "The backup directory where backups get stored. "
             "Path in the filesystem.",
       ),
-      dbRootPassword: Setting(
-        key: "db_password",
-        value: dbRootPassword ?? "admin",
+      databasePassword: Setting(
+        key: "password",
+        value: databasePassword ?? "admin",
         description:
             "The root password of the database of the erpnext installation.",
       ),
@@ -145,44 +117,38 @@ final class Settings {
   }
 
   Settings._internal({
-    required this.connectionPort,
-    required this.currentSite,
-    required this.dockerContainerName,
-    required this.appDirectoryName,
-    required this.logDirectoryName,
-    required this.backupSourcePath,
-    required this.backupDestinationPath,
-    required this.dbRootPassword,
+    required this.port,
+    required this.frontendSite,
+    required this.frontendContainer,
+    required this.backendContainer,
+    required this.backupStoragePath,
+    required this.databasePassword,
   });
 
-  factory Settings.base() => Settings(
-    currentSite: null,
-    connectionPort: null,
-    dockerContainerName: null,
-    appDirectoryName: null,
-    logDirectoryName: null,
-    backupSourcePath: null,
-    backupDestinationPath: null,
-    dbRootPassword: null,
+  factory Settings.new() => Settings._build(
+    frontendSite: null,
+    port: null,
+    frontendContainer: null,
+    backendContainer: null,
+    backupStoragePath: null,
+    databasePassword: null,
   );
 
-  static Settings load() {
-    final Settings s = Settings.base();
+  static Settings fromDisk() {
+    final Settings s = Settings();
     try {
       final File file = File(configurationFilePath);
       if (!file.existsSync()) return s;
 
       final Uint8List bytes = file.readAsBytesSync();
       final Map<String, dynamic> doc = jsonDecode(String.fromCharCodes(bytes));
-      return Settings(
-        currentSite: doc[s.currentSite.key],
-        connectionPort: doc[s.connectionPort.key],
-        dockerContainerName: doc[s.dockerContainerName.key],
-        appDirectoryName: doc[s.appDirectoryName.key],
-        logDirectoryName: doc[s.logDirectoryName.key],
-        backupSourcePath: doc[s.backupSourcePath.key],
-        backupDestinationPath: doc[s.backupDestinationPath.key],
-        dbRootPassword: doc[s.dbRootPassword.key],
+      return Settings._build(
+        frontendSite: doc[s.frontendSite.key],
+        port: doc[s.port.key],
+        frontendContainer: doc[s.frontendContainer.key],
+        backendContainer: doc[s.backendContainer.key],
+        backupStoragePath: doc[s.backupStoragePath.key],
+        databasePassword: doc[s.databasePassword.key],
       );
     } catch (e) {
       print("[Settings.load] Error loading configuration: $e");

@@ -22,7 +22,7 @@ final NatrixCommand statusCommand = NatrixCommand(
       return;
     }
 
-    final Settings settings = Settings.load();
+    final Settings settings = Settings.fromDisk();
 
     final String composeFilePath = path.join(
       settings.appDirectoryPath,
@@ -50,95 +50,90 @@ final NatrixCommand statusCommand = NatrixCommand(
     if (running) {
       erpnextStatus = NatrixText("• Running", foreground: .green);
     }
-
     io.writeLines(
-      lines: NatrixColumn(
-        lines: [
-          ...NatrixBlock(
-            heading: NatrixText("Installation:", style: .bold),
-            content: NatrixStructure(
-              padding: 0,
-              spacePrefix: 1,
-              sections: [
-                NatrixLine(text: NatrixText("(Status) ") + erpnextStatus),
-                NatrixLine(
-                  text:
-                      NatrixText("(Configuration file)  ") +
-                      NatrixText(
-                        configFound ? "✓ Found" : "✕ Not found",
-                        foreground: configFound ? .green : .red,
-                      ),
-                ),
-                NatrixLine(
-                  text:
-                      NatrixText("(Backup schedule)  ") +
-                      NatrixText(
-                        hasSchedule ? "✓ ${schedule!}" : "✕ Disabled",
-                        foreground: hasSchedule ? .green : .red,
-                      ),
-                ),
-                NatrixLine(
-                  text:
-                      NatrixText("(Autostart)  ") +
-                      NatrixText(
-                        hasAutostart ? "✓ Active" : "✕ Disabled",
-                        foreground: hasAutostart ? .green : .red,
-                      ),
-                ),
-              ],
-            ),
-          ).format(),
-          ...NatrixBlock(
-            heading: NatrixText("Connection:", style: .bold),
-            content: NatrixStructure(
-              padding: 0,
-              spacePrefix: 1,
-              sections: [
-                NatrixLine(
-                  text:
-                      NatrixText("(container)  ") +
-                      NatrixText(
-                        "${settings.dockerContainerName}",
-                        foreground: .blueAccent,
-                      ),
-                ),
-                NatrixLine(
-                  text:
-                      NatrixText("(port)  ") +
-                      NatrixText(
-                        "${settings.connectionPort.toString()}",
-                        foreground: .blueAccent,
-                      ),
-                ),
-                NatrixLine(
-                  text:
-                      NatrixText("(site)  ") +
-                      NatrixText(
-                        "${settings.currentSite}",
-                        foreground: .blueAccent,
-                      ),
-                ),
-              ],
-            ),
-          ).format(),
-        ],
+      lines: status(
+        dockerContainerName: settings.frontendContainer.value,
+        connectionPort: settings.port.value,
+        currentSite: settings.frontendSite.value,
+        erpnextStatus: erpnextStatus,
+        configFound: configFound,
+        hasSchedule: hasSchedule,
+        hasAutostart: hasAutostart,
+        schedule: schedule,
       ).format(),
     );
   },
 );
 
-class StatusSection implements NatrixSection {
-  final NatrixHeader header;
 
-  const StatusSection({required this.header});
-
-  @override
-  List<NatrixText> format() {
-    // TODO: implement format
-    throw UnimplementedError();
-  }
-
-  @override
-  // TODO: implement isEmpty
-  bool get isEmpty => throw UnimplementedError();
-}
+NatrixSection status({
+  required String dockerContainerName,
+  required int connectionPort,
+  required String currentSite,
+  required NatrixText erpnextStatus,
+  required bool configFound,
+  required bool hasSchedule,
+  required bool hasAutostart,
+  required String? schedule,
+}) => NatrixStructure(
+  sections: [
+    NatrixBlock(
+      heading: NatrixText("Installation:", style: .bold),
+      content: NatrixStructure(
+        padding: 0,
+        spacePrefix: 1,
+        sections: [
+          NatrixLine(text: NatrixText("(ERPNext) ") + erpnextStatus),
+          NatrixLine(
+            text:
+                NatrixText("(Configuration file) ") +
+                NatrixText(
+                  configFound ? "✓ Found" : "✕ Not found",
+                  foreground: configFound ? .green : .red,
+                ),
+          ),
+          NatrixLine(
+            text:
+                NatrixText("(Backup schedule) ") +
+                NatrixText(
+                  hasSchedule ? "✓ ${schedule!}" : "✕ Disabled",
+                  foreground: hasSchedule ? .green : .red,
+                ),
+          ),
+          NatrixLine(
+            text:
+                NatrixText("(Autostart) ") +
+                NatrixText(
+                  hasAutostart ? "✓ Active" : "✕ Disabled",
+                  foreground: hasAutostart ? .green : .red,
+                ),
+          ),
+        ],
+      ),
+    ),
+    NatrixBlock(
+      heading: NatrixText("Connection:", style: .bold),
+      content: NatrixStructure(
+        padding: 0,
+        spacePrefix: 1,
+        sections: [
+          NatrixLine(
+            text:
+                NatrixText("(container) ") +
+                NatrixText(dockerContainerName, foreground: .blue),
+          ),
+          NatrixLine(
+            text:
+                NatrixText("(port) ") +
+                NatrixText(connectionPort.toString(), foreground: .blue),
+          ),
+          NatrixLine(
+            text:
+                NatrixText("(site) ") +
+                NatrixText(currentSite, foreground: .blue),
+          ),
+        ],
+      ),
+    ),
+  ],
+);

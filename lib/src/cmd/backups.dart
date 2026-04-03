@@ -7,6 +7,8 @@ import 'package:stepflow/core.dart';
 
 import 'package:td_erpnext/src/flags.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
+import 'package:td_erpnext/src/steps/systemd/get_schedule.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/update_schedule.dart';
 import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 import 'backups/on.dart';
@@ -23,6 +25,7 @@ final NatrixCommand backupsCommand = NatrixCommand(
   flags: [
     DurationFlag(
       id: "interval",
+      tooltip: "Sets the schedule of backup creation.",
       value: _systemd.hasSchedule()
           ? _systemd.getSchedule()
           : Duration(days: 2),
@@ -30,7 +33,6 @@ final NatrixCommand backupsCommand = NatrixCommand(
         Duration(days: 1, hours: 12, minutes: 45),
         Duration(minutes: 20),
       ],
-      tooltip: "Sets the schedule of backup creation.",
     ),
   ],
   children: [
@@ -40,7 +42,7 @@ final NatrixCommand backupsCommand = NatrixCommand(
     backupsRestoreCommand,
     backupsListCommand,
   ],
-  callback: (NatrixCallbackOptions options) async {
+  callback: (options) async {
     final NatrixStdio io = NatrixStdio();
     final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
     if (options.getFlag("help").value) {
@@ -54,7 +56,9 @@ final NatrixCommand backupsCommand = NatrixCommand(
 
     if (changedSchedulerDuration) {
       await runWorkflow(
-        _systemd.updateSchedule(interval: interval.value),
+        _systemd.updateSchedule(
+          UpdateScheduleSettings(interval: interval.value),
+        ),
         (response) => io.newLine(
           text: NatrixText(response.message),
           output: response.isError ? .stderr : .stdout,

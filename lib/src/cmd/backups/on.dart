@@ -24,7 +24,7 @@ final NatrixCommand backupsEnableCommand = NatrixCommand(
 
     final Response lastResponse = await runWorkflow(
       Systemd.get().setupSchedule(
-        arguments: ["backups", "create"],
+        args: ["backups", "create"],
         interval: bP.value,
       ),
       (response) => io.newLine(

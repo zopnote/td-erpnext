@@ -1,18 +1,32 @@
+import 'dart:io';
+
+import 'package:stepflow/core.dart';
+
 import 'package:td_erpnext/src/settings.dart';
 
-export 'autostart.dart';
-export 'schedule.dart';
+import 'steps/remove_autostart.dart';
+import 'steps/remove_schedule.dart';
+import 'steps/setup_autostart.dart';
+import 'steps/setup_schedule.dart';
+import 'steps/update_schedule.dart';
 
-/// This class provides methods to set up systemd services on Linux.
-///
-/// systemd is a system and service manager for Linux. It uses "unit files"
-/// to define how services should be started and managed.
-///
-/// There are two main components used here:
-/// 1. **Services (.service)**: These define the actual command to run.
-/// 2. **Timers (.timer)**: These act like alarm clocks that tell systemd
-///    when to trigger a specific service.
-final class Systemd {
+abstract class SystemdStep<
+  C extends StepWiser<Systemd, C, SingleStep<Systemd, C>>
+>
+    extends SingleStep<Systemd, C> {}
+
+/**
+  This class provides methods to set up systemd services on Linux.
+
+   systemd is a system and service manager for Linux. It uses "unit files"
+   to define how services should be started and managed.
+
+   There are two main components used here:
+   1. **Services (.service)**: These define the actual command to run.
+   2. **Timers (.timer)**: These act like alarm clocks that tell systemd
+      when to trigger a specific service.
+ */
+final class Systemd extends CollectionStep<Systemd> {
   final String serviceName;
   static late final Systemd _instance;
   static bool initialized = false;
@@ -22,6 +36,65 @@ final class Systemd {
   }
   factory Systemd.get() =>
       initialized ? _instance : Systemd._internal(Settings.serviceName);
+
+  /**
+    Sets up a systemd service and a timer to run this program at a recurring interval.
+
+     * Creates a `.service` file (the "task") that tells the system to run
+       the program with a specific argument as the root user.
+     * Creates a `.timer` file (the "schedule") based on the [interval].
+     * `Persistent=true` ensures that if the computer was off during the
+       scheduled time, the task will run immediately after the next boot.
+     * The task is of type `oneshot`, meaning it's expected to run, finish,
+       and then stop until the next time the timer triggers it.
+   */
+  Step setupSchedule(final SetupScheduleSettings settings) =>
+      stepwise<SetupSchedule, SetupScheduleSettings>(settings);
+
+  /// Removes the systemd scheduler (timer and service) with the given [serviceName].
+  Step removeSchedule(final RemoveScheduleSettings settings) =>
+      stepwise<SystemdRemoveSchedule, RemoveScheduleSettings>(settings);
+
+  /**
+    Updates the duration of an existing scheduler timer.
+
+    This will update the `.timer` file and reload systemd to apply the changes.
+   */
+  Step updateSchedule(final UpdateScheduleSettings settings) =>
+      stepwise<UpdateSchedule, UpdateScheduleSettings>(settings);
+
+  /**
+    Sets up a systemd service that starts automatically when the system boots.
+
+     * Creates a `.service` file that defines a background task.
+     * `Type=simple` means the service starts immediately and stays running.
+     * `WantedBy=multi-user.target` tells Linux to start this service as soon
+       as the system is ready for regular use (the "multi-user" state).
+     * `Restart=on-failure` ensures that if the program crashes, systemd will
+       automatically try to start it again, providing better reliability.
+   */
+  Step setupAutostart(final SetupAutostartSettings settings) =>
+      stepwise<SetupAutostart, SetupAutostartSettings>(settings);
+
+  /// Removes the systemd boot service with the given [serviceName].
+  Step removeAutostart(final RemoveAutostartSettings settings) =>
+      stepwise<RemoveAutostart, RemoveAutostartSettings>(settings);
+
+  /// Checks if a recurring (timer) service with the given [serviceName] is installed.
+  ///
+  /// Returns `true` if the `.timer` file exists in `/etc/systemd/system/`.
+  bool hasSchedule() {
+    return File(
+      '/etc/systemd/system/$serviceName-scheduler.timer',
+    ).existsSync();
+  }
+
+  /// Checks if a boot service with the given [serviceName] is installed.
+  ///
+  /// Returns `true` if the `.service` file exists in `/etc/systemd/system/`.
+  bool hasAutostart() {
+    return File('/etc/systemd/system/$serviceName.service').existsSync();
+  }
 
   String recurringService(String executablePath, String argument) =>
       """

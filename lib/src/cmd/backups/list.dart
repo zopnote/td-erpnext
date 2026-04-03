@@ -21,8 +21,8 @@ final NatrixCommand backupsListCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
-    final Settings settings = Settings.load();
-    final String backupPath = settings.backupDestinationPath.value;
+    final Settings settings = Settings.fromDisk();
+    final String backupPath = settings.backupStoragePath.value;
     final directory = Directory(backupPath);
 
     if (!directory.existsSync()) {

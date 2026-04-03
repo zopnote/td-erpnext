@@ -20,7 +20,7 @@ final NatrixCommand startCommand = NatrixCommand(
       return;
     }
 
-    final Settings settings = Settings.load();
+    final Settings settings = Settings.fromDisk();
 
     await runWorkflow(
       Start(

@@ -19,7 +19,7 @@ final NatrixCommand stopCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
-    final Settings settings = Settings.load();
+    final Settings settings = Settings.fromDisk();
     await runWorkflow(
       Stop(
         appDirectoryPath: settings.appDirectoryPath,

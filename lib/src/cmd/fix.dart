@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:natrix/core.dart';
+import 'package:natrix/io.dart';
+import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/steps/create_directory.dart';
@@ -10,6 +12,7 @@ import 'package:stepflow/src/io/steps/log_print.dart';
 final NatrixCommand fixCommand = NatrixCommand(
   id: "fix",
   description: "Apply some fixes to encounter issues.",
+  inheritFlags: true,
   flags: [
     NatrixBoolFlag(
       id: "reset",
@@ -18,24 +21,28 @@ final NatrixCommand fixCommand = NatrixCommand(
     ),
   ],
   callback: (options) async {
+    final NatrixStdio io = NatrixStdio();
+    final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
+    if (options.getFlag("help").value) {
+      io.writeLines(lines: theme.root.format());
+      return;
+    }
     final bool resetSettings = options.getFlag("reset").value;
     final Systemd systemd = Systemd.get();
-    final bool hasSchedule = systemd.hasSchedule();
+    final Settings settings = Settings.fromDisk();
 
-    final Duration? schedule = hasSchedule ? systemd.getSchedule() : null;
-    final Settings settings = Settings.load();
     await runWorkflow(
       Chain(
         steps: [
           Conditional(
-            condition: hasSchedule,
+            condition: systemd.hasSchedule(),
             child: Chain(
               steps: [
                 LogASCIIContext("Reinstall systemd scheduler..."),
                 systemd.removeSchedule(),
                 systemd.setupSchedule(
-                  arguments: ["backups", "create"],
-                  interval: schedule!,
+                  args: ["backups", "create"],
+                  interval: systemd.getSchedule(),
                 ),
               ],
             ),
@@ -46,7 +53,7 @@ final NatrixCommand fixCommand = NatrixCommand(
               steps: [
                 LogASCIIContext("Reinstall systemd boot service..."),
                 systemd.removeAutostart(),
-                systemd.setupAutostart(arguments: ["start"]),
+                systemd.setupAutostart(args: ["start"]),
               ],
             ),
           ),
@@ -62,14 +69,12 @@ final NatrixCommand fixCommand = NatrixCommand(
             ),
           ),
           Conditional(
-            condition: !Directory(
-              settings.appDirectoryPath,
-            ).existsSync(),
+            condition: !Directory(Settings.appDirectoryPath).existsSync(),
             child: Chain(
               steps: [
                 LogASCIIContext("Create app directory..."),
                 CreateDirectory(
-                  settings.appDirectoryPath,
+                  Settings.appDirectoryPath,
                   recursive: true,
                   deleteIfExists: true,
                 ),

@@ -6,10 +6,8 @@ import 'package:natrix/theme.dart';
 
 import 'package:stepflow/core.dart';
 
-import 'package:td_erpnext/src/steps/restore.dart';
+import 'package:td_erpnext/src/steps/backup_restore.dart';
 import 'restore/last.dart';
-import 'package:td_erpnext/src/steps/docker.dart';
-import 'package:td_erpnext/src/settings.dart';
 
 final NatrixCommand backupsRestoreCommand = NatrixCommand(
   id: "restore",
@@ -36,31 +34,8 @@ final NatrixCommand backupsRestoreCommand = NatrixCommand(
       );
       return;
     }
-    final Settings settings = Settings.load();
     await runWorkflow(
-      Chain(
-        steps: [
-          ERPNextRestore(
-            container: DockerContainer(settings.dockerContainerName.value),
-            restoreLast: false,
-            backupBundleName: options.args.first,
-            appDirectoryPath: settings.appDirectoryPath,
-            currentSiteName: settings.currentSite.value,
-            backupsDirectoryPath: settings.backupDestinationPath.value,
-            workingDirectory: settings.appDirectoryPath,
-            onCallback: (context, chars, error) => context.send(
-              Response(
-                String.fromCharCodes(chars),
-                error ? Level.error : Level.normal,
-              ),
-            ),
-          ),
-        ],
-      ),
-      (response) => io.newLine(
-        text: NatrixText(response.message),
-        output: response.isError ? .stderr : .stdout,
-      ),
+      RestoreBackup(restoreLast: false, bundleName: options.args.first),
     );
   },
 );

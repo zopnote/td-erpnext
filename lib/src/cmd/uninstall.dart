@@ -21,11 +21,11 @@ final NatrixCommand uninstallCommand = NatrixCommand(
       return;
     }
 
-    final Settings settings = Settings.load();
+    final Settings settings = Settings.fromDisk();
     await runWorkflow(
       Uninstall(
         appDirectoryPath: settings.appDirectoryPath,
-        backupsDirectoryPath: settings.backupDestinationPath.value,
+        backupsDirectoryPath: settings.backupStoragePath.value,
         removeBackups: options.getFlag("hard").value,
         onCallback: (context, chars, error) => context.send(
           Response(

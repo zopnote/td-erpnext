@@ -5,6 +5,7 @@ import 'package:natrix/io.dart';
 import 'package:natrix/theme.dart';
 
 import 'package:stepflow/core.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/remove_schedule.dart';
 import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 final NatrixCommand backupsDisableCommand = NatrixCommand(
@@ -20,7 +21,7 @@ final NatrixCommand backupsDisableCommand = NatrixCommand(
     }
 
     final Response lastResponse = await runWorkflow(
-      Systemd.get().removeSchedule(),
+      Systemd.get().removeSchedule(RemoveScheduleSettings()),
       (response) => io.newLine(
         text: NatrixText(response.message),
         output: response.isError ? .stderr : .stdout,
