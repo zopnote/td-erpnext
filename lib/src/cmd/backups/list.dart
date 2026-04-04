@@ -21,14 +21,15 @@ final NatrixCommand backupsListCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
+
     final Settings settings = Settings.fromDisk();
-    final String backupPath = settings.backupStoragePath.value;
-    final directory = Directory(backupPath);
+    final String bundlesPath = settings.backupStoragePath.value;
+    final directory = Directory(bundlesPath);
 
     if (!directory.existsSync()) {
       io.newLine(
         text: NatrixText(
-          "Backup directory does not exist: $backupPath",
+          "Backup directory does not exist: $bundlesPath",
           foreground: .red,
         ),
         output: .stderr,
@@ -46,14 +47,14 @@ final NatrixCommand backupsListCommand = NatrixCommand(
 
     if (entities.isEmpty) {
       io.newLine(
-        text: NatrixText("No backups found in $backupPath", foreground: .red),
+        text: NatrixText("No backups found in $bundlesPath", foreground: .red),
         output: .stderr,
       );
       return;
     }
 
     final StringBuffer buffer = StringBuffer();
-    buffer.writeln("Available backups in $backupPath:");
+    buffer.writeln("Available backups in $bundlesPath:");
     buffer.writeln("");
 
     for (final entity in entities) {
