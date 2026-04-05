@@ -7,21 +7,18 @@ import 'package:stepflow/io.dart';
 import 'package:stepflow/platform.dart';
 import 'package:yaml/yaml.dart';
 
-Future<void> main() async => await runWorkflow(
-  BuildWorkflow(
-    projectRoot: await projectRoot,
-    outDirectoryName: "out",
-    readme: io.File(path.join((await projectRoot).path, "readme.md")),
-    pubspec: io.File(path.join((await projectRoot).path, "pubspec.yaml")),
-  ),
-  (response) {
-    if (response.isError) {
-      io.stderr.writeln(response.message);
-      return;
-    }
-    io.stdout.writeln(response.message);
-  },
-);
+Future<void> main() async {
+  await runWorkflow(
+    BuildWorkflow(
+      projectRoot: await projectRoot,
+      outDirectoryName: "out",
+      readme: io.File(path.join((await projectRoot).path, "readme.md")),
+      pubspec: io.File(path.join((await projectRoot).path, "pubspec.yaml")),
+    ),
+  );
+
+  io.stdout.writeln("Hello world");
+}
 
 Future<io.Directory> get projectRoot async => await getProjectRoot();
 
@@ -79,19 +76,19 @@ class BuildWorkflow extends ConfigureStep {
     bool isOpen = true;
     return Chain(
       steps: [
-        Runnable((context) {
+        Runnable(() {
           if (!io.Platform.isLinux) {
-            context.pop("The application is only available on linux.");
+            throw Exception("The application is only available on linux.");
           }
         }),
         Check(
           programs: ["dart", "git"],
-          onFailure: (context, programs) => context.pop(
+          onFailure: (programs) => throw Exception(
             "The following dependencies aren't satisfied: ${programs.join(", ")}.",
           ),
         ),
         CreateDirectory(path.join(output.path, "bin"), recursive: true),
-        Runnable((_) => print("Building project...")),
+        Runnable(() => print("Building project...")),
         Shell(
           program: "dart",
           arguments: [
@@ -101,13 +98,11 @@ class BuildWorkflow extends ConfigureStep {
             "--output=${path.join(output.path, "bin", pubspec.name)}$executableExtension",
           ],
           options: ProcessInterfaceOptions(workingDirectory: projectRoot.path),
-          onStderr: (context, chars) {
-            io.stderr.add(chars);
+          onStderr: (chars) {
             if (isOpen) {
-              context.pop(
-                "An error occurred while the compilation of the project.",
+              throw Exception(
+                "An error occurred while the compilation of the project: \n${String.fromCharCodes(chars)}",
               );
-              isOpen = false;
             }
           },
         ),
@@ -117,7 +112,7 @@ class BuildWorkflow extends ConfigureStep {
           files: ["readme", "license"],
         ),
         Runnable(
-          (context) => buildFinishCallback != null
+          () => buildFinishCallback != null
               ? buildFinishCallback!(
                   io.File(
                     "${path.join(output.path, "bin", pubspec.name)}$executableExtension",
@@ -140,7 +135,7 @@ class CreateDirectory extends ConfigureStep {
     this.deleteIfExists = false,
   });
   @override
-  Step configure() => Runnable((context) async {
+  Step configure() => Runnable(() async {
     final bool exists = await io.Directory(path).exists();
     if (exists) {
       if (!deleteIfExists) {

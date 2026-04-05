@@ -4,41 +4,54 @@ import 'package:path/path.dart' as path;
 
 import 'package:stepflow/io.dart';
 import 'package:stepflow/core.dart';
-import 'package:stepflow/src/io/steps/log_print.dart';
 import 'package:td_erpnext/src/settings.dart';
+import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
+    as dockerCompose;
+import 'package:td_erpnext/src/utils.dart';
 
-import 'package:td_erpnext/src/steps/create_directory.dart';
-import 'package:td_erpnext/src/steps/docker_compose/docker_compose.dart';
+class SetupException implements Exception {
+  const SetupException(this.message);
+  final String message;
+  static SetupException dockerCompose(String error) => SetupException(
+    "An unexpected error occurred inside "
+    "docker compose while setup of the erpnext "
+    "installation: $error",
+  );
+  static SetupException unavailableDependencies(List<String> dependencies) {
+    return SetupException(
+      "The following dependencies aren't satisfied: ${dependencies.join(", ")}. ",
+    );
+  }
 
-import 'docker/docker.dart';
+  @override
+  String toString() => message;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! SetupException) {
+      return false;
+    }
+    return other.message == message;
+  }
+}
 
 class Setup extends ConfigureStep {
   const Setup();
 
   @override
   Step configure() {
-    final String composeFilePath = path.join(
-      Settings.appDirectoryPath,
-      "frappe_docker",
-      "pwd.yml",
+    final File composeFile = File(
+      path.join(Settings.appDirectoryPath, "frappe_docker", "pwd.yml"),
     );
     final Directory repository = Directory(
       path.join(Settings.appDirectoryPath, "frappe_docker"),
-    );
-    final DockerCompose dockerCompose = DockerCompose(
-      onCallback: (context, chars, isError) {
-        if (isError) {
-          throw;
-        }
-      }
     );
     return Chain(
       steps: [
         Check(
           programs: ["docker", "git", "systemctl", "systemd"],
-          onFailure: (context, programs) => context.pop(
-            "The following dependencies aren't satisfied: ${programs.join(", ")}. ",
-          ),
+          onFailure: (programs) =>
+              throw SetupException.unavailableDependencies(programs),
         ),
         Conditional(
           condition: !repository.existsSync(),
@@ -55,19 +68,19 @@ class Setup extends ConfigureStep {
                 options: ProcessInterfaceOptions(
                   workingDirectory: Settings.appDirectoryPath,
                 ),
-                onStdout: (context, chars) =>
-                    _grayedCallback.call(context, chars, false),
-                onStderr: (context, chars) =>
-                    _grayedCallback.call(context, chars, true),
               ),
             ],
           ),
         ),
-        .init(
-          composeFile: File(composeFilePath),
-          workingDirectory: appDirectoryPath,
+        dockerCompose.Init(
+          composeFile: composeFile,
           detach: true,
-          onCallback: _grayedCallback,
+          workingDirectory: Settings.appDirectoryPath,
+          callback: (chars, isError) {
+            if (isError) {
+              throw SetupException.dockerCompose(String.fromCharCodes(chars));
+            }
+          },
         ),
       ],
     );

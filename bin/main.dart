@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:natrix/core.dart';
 import 'package:natrix/io.dart';
 
-import 'package:td_erpnext/cmd.dart';
+import 'root.dart';
 
 Future<void> main(List<String> arguments) async {
   final String? user = Platform.environment['USER'];

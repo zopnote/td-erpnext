@@ -6,5 +6,7 @@ import 'build.dart';
 
 Future<void> main() async {
   print("Remove output directory...");
-  await Directory(path.join((await projectRoot).path, "out")).delete(recursive: true);
+  await Directory(
+    path.join((await projectRoot).path, "out"),
+  ).delete(recursive: true);
 }

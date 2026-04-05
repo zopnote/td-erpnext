@@ -1,80 +1,94 @@
 import 'dart:io';
 
+import 'package:natrix/io.dart';
 import 'package:path/path.dart' as path;
 import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
-import 'package:td_erpnext/src/steps/docker.dart';
-import 'package:stepflow/src/io/steps/log_print.dart';
-import 'package:td_erpnext/src/steps/systemd/steps/remove_schedule.dart';
-import 'package:td_erpnext/src/steps/systemd/systemd.dart';
+
+import 'package:td_erpnext/src/settings.dart';
+import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
+    as dockerCompose;
+import 'package:td_erpnext/src/steps/vendor/systemd.dart' as systemd;
+import 'package:td_erpnext/src/utils.dart';
+
+class UninstallException implements Exception {
+  final String message;
+  const UninstallException(this.message);
+
+  static UninstallException dockerError(String error) => UninstallException(
+    "An error occurred while the "
+    "shutdown of the docker container: $error",
+  );
+  @override
+  String toString() => message;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! UninstallException) {
+      return false;
+    }
+    return other.message == message;
+  }
+}
 
 class Uninstall extends ConfigureStep {
-  final DockerOutputCallback? onCallback;
-  final String appDirectoryPath;
   final bool removeBackups;
-  final String backupsDirectoryPath;
-  Uninstall({
-    required this.appDirectoryPath,
-    this.onCallback,
-    this.removeBackups = false,
-    this.backupsDirectoryPath = "",
-  });
+  const Uninstall({this.removeBackups = false});
 
-  late final DockerOutputCallback _grayedCallback = (context, chars, error) =>
-      this.onCallback?.call(
-        context,
-        LogColor.grayed(String.fromCharCodes(chars)).codeUnits,
-        error,
-      );
   @override
   Step configure() {
-    if (removeBackups && backupsDirectoryPath.isEmpty) {
-      throw Exception(
-        "If you want to remove backups, "
-        "you have to specify the backups directory "
-        "in order to get it removed.",
-      );
+    final File composeFile = File(Settings.composeFilePath);
+    if (!composeFile.existsSync()) {
+      throw InstallationNotFoundException();
     }
-    final String composeFilePath = path.join(
-      appDirectoryPath,
-      "frappe_docker",
-      "pwd.yml",
-    );
+    final NatrixStdio io = NatrixStdio();
+    final Settings settings = Settings.fromDisk();
+    final void Function(List<int>) outputCallback = (chars) =>
+        io.newLine(text: NatrixText(String.fromCharCodes(chars)));
     return Chain(
       steps: [
-        LogASCIIContext("Uninstall dockerimages and -volumes..."),
-        DockerCompose.shutdown(
-          composeFile: File(composeFilePath),
-          onCallback: _grayedCallback,
+        const PrintNatrixLine(
+          text: NatrixText("Uninstall dockerimages and -volumes..."),
+        ),
+        dockerCompose.Shutdown(
+          composeFile: composeFile,
           removeImages: true,
           removeVolumes: true,
+          workingDirectory: Settings.appDirectoryPath,
+          callback: (chars, isError) {
+            if (isError) {
+              throw UninstallException.dockerError(String.fromCharCodes(chars));
+            }
+          },
         ),
-        LogASCIIContext("Remove $appDirectoryPath..."),
+        PrintNatrixLine(
+          text: NatrixText("Remove ${Settings.appDirectoryPath}..."),
+        ),
         Shell(
           program: "rm",
-          arguments: ["-r", "-f", appDirectoryPath],
-          onStderr: (context, chars) => _grayedCallback(context, chars, true),
-          onStdout: (context, chars) => _grayedCallback(context, chars, false),
+          arguments: ["-r", "-f", Settings.appDirectoryPath],
         ),
         Conditional(
           condition: removeBackups,
           child: Chain(
             steps: [
-              LogASCIIContext("Remove $backupsDirectoryPath..."),
+              PrintNatrixLine(
+                text: NatrixText(
+                  "Remove ${settings.backupStoragePath.value}...",
+                ),
+              ),
               Shell(
                 program: "rm",
-                arguments: ["-r", "f", backupsDirectoryPath],
-                onStderr: (context, chars) =>
-                    _grayedCallback(context, chars, true),
-                onStdout: (context, chars) =>
-                    _grayedCallback(context, chars, false),
+                arguments: ["-r", "f", settings.backupStoragePath.value],
+                onStderr: (chars) => outputCallback(chars),
+                onStdout: (chars) => outputCallback(chars),
               ),
             ],
           ),
         ),
-        LogASCIIContext("Remove systemd services..."),
-        Systemd.get().removeAutostart(),
-        Systemd.get().removeSchedule(RemoveScheduleSettings()),
+        const PrintNatrixLine(text: NatrixText("Remove systemd services...")),
+        systemd.RemoveAutostart(),
+        systemd.RemoveSchedule(),
       ],
     );
   }

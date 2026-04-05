@@ -45,6 +45,8 @@ final class Settings {
   /// directories of the working process are stored.
   static String get appDirectoryName => "app";
 
+  static String get repositoryName => "frappe_docker";
+
   /// The location where the erpnext, the docker image and process files are located.
   static String get appDirectoryPath =>
       path.join(rootDirectoryPath, appDirectoryName);
@@ -58,6 +60,10 @@ final class Settings {
   /// The name of the binary directory inside the app bundles root.
   static String get binDirectoryName => path.basename(binDirectoryPath);
 
+  static String get repositoryPath =>
+      path.join(appDirectoryPath, repositoryName);
+  static String get composeFilePath => path.join(repositoryPath, "pwd.yml");
+
   factory Settings._build({
     required String? frontendSite,
     required int? port,
@@ -67,7 +73,7 @@ final class Settings {
     required String? databasePassword,
   }) {
     return Settings._internal(
-      port: Setting(
+      port: IntSetting(
         key: "port",
         value: port ?? 8080,
         description:
@@ -75,7 +81,7 @@ final class Settings {
             "to of the frontend of the running erpnext"
             "in the docker container.",
       ),
-      frontendSite: Setting(
+      frontendSite: StringSetting(
         key: "site",
         value: frontendSite ?? "frontend",
         description:
@@ -83,7 +89,7 @@ final class Settings {
             "to connect to of the frontend of the running "
             "erpnext in the docker container.",
       ),
-      frontendContainer: Setting(
+      frontendContainer: StringSetting(
         key: "frontend_container",
         value: frontendContainer ?? "frappe_docker_frontend_1",
         description:
@@ -91,7 +97,7 @@ final class Settings {
             "to connect to of the frontend of the running "
             "erpnext in the docker container.",
       ),
-      backendContainer: Setting(
+      backendContainer: StringSetting(
         key: "backend_container",
         value: backendContainer ?? "frappe_docker_backend_1",
         description:
@@ -100,14 +106,14 @@ final class Settings {
             "erpnext in the docker container.",
       ),
 
-      backupStoragePath: Setting(
+      backupStoragePath: StringSetting(
         key: "backup_storage",
         value: backupStoragePath ?? "/var/backups/erpnext",
         description:
             "The backup directory where backups get stored. "
             "Path in the filesystem.",
       ),
-      databasePassword: Setting(
+      databasePassword: StringSetting(
         key: "password",
         value: databasePassword ?? "admin",
         description:
@@ -166,7 +172,7 @@ final class Settings {
 
       final String content = JsonEncoder.withIndent(
         '  ',
-      ).convert(Map.fromEntries(_mapping.map((e) => MapEntry(e.key, e.value))));
+      ).convert(Map.fromEntries(settings.map((e) => MapEntry(e.key, e.value))));
       file.writeAsStringSync(content);
     } catch (e) {
       print("[Settings.save] Error saving configuration: $e");
@@ -174,7 +180,7 @@ final class Settings {
   }
 }
 
-class DependingSetting extends Setting<String> {
+class DependingSetting extends StringSetting {
   final String placeholder;
   final String Function() dependency;
   DependingSetting({
@@ -187,17 +193,44 @@ class DependingSetting extends Setting<String> {
   String get value => super.value.replaceAll(placeholder, dependency());
 }
 
-class Setting<T> {
+class IntSetting extends Setting<int> {
+  IntSetting({
+    required super.key,
+    required super.value,
+    required super.description,
+  });
+
+  @override
+  int parse(String raw) => int.parse(raw);
+}
+
+class StringSetting extends Setting<String> {
+  StringSetting({
+    required super.key,
+    required super.value,
+    required super.description,
+  });
+
+  @override
+  String parse(String raw) => raw;
+}
+
+abstract class Setting<T> {
   final String key;
   final String description;
-  T value;
-  Setting({required this.key, required this.value, required this.description}) {
+  T _value;
+  T get value => _value;
+  set value(T value) => _value = value;
+  T parse(String raw);
+
+  Setting({required this.key, required T value, required this.description})
+    : _value = value {
     if (key.isEmpty) {
       return;
     }
-    _mapping.removeWhere((e) => e.key == key);
-    _mapping.add(this);
+    settings.removeWhere((e) => e.key == key);
+    settings.add(this);
   }
 }
 
-final List<Setting> _mapping = [];
+final List<Setting> settings = [];

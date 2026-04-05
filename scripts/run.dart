@@ -22,12 +22,5 @@ Future<void> main(List<String> arguments) async {
         );
       },
     ),
-        (response) {
-      if (response.isError) {
-        io.stderr.writeln(response.message);
-        return;
-      }
-      io.stdout.writeln(response.message);
-    },
   );
 }

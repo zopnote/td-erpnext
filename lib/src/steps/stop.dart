@@ -1,36 +1,56 @@
 import 'dart:io';
 
+import 'package:natrix/core.dart';
 import 'package:path/path.dart' as path;
 import 'package:stepflow/core.dart';
-import 'package:td_erpnext/src/steps/docker.dart';
-import 'package:stepflow/src/io/steps/log_print.dart';
+import 'package:td_erpnext/src/settings.dart';
+
+import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
+    as dockerCompose;
+import '../utils.dart';
+
+class StopException implements Exception {
+  final String message;
+
+  const StopException(this.message);
+
+  static StopException dockerError(String error) => StopException(
+    "An error occurred while the "
+    "stop of the docker containers: $error",
+  );
+
+  @override
+  String toString() => message;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! StopException) {
+      return false;
+    }
+    return other.message == message;
+  }
+}
 
 class Stop extends ConfigureStep {
-  final DockerOutputCallback? onCallback;
-  final String appDirectoryPath;
+  const Stop();
 
-  Stop({required this.appDirectoryPath, this.onCallback});
-
-  late final DockerOutputCallback _grayedCallback = (context, chars, error) =>
-      this.onCallback?.call(
-        context,
-        LogColor.grayed(String.fromCharCodes(chars)).codeUnits,
-        error,
-      );
   @override
   Step configure() {
-    final String composeFilePath = path.join(
-      appDirectoryPath,
-      "frappe_docker",
-      "pwd.yml",
-    );
+    final File composeFile = File(Settings.composeFilePath);
+    if (!composeFile.existsSync()) {
+      throw InstallationNotFoundException();
+    }
     return Chain(
       steps: [
-        LogASCIIContext("Stop $composeFilePath..."),
-        DockerCompose.stop(
-          composeFile: File(composeFilePath),
-          workingDirectory: appDirectoryPath,
-          onCallback: _grayedCallback,
+        PrintNatrixLine(text: NatrixText("Stop ${composeFile.path}...")),
+        dockerCompose.Stop(
+          composeFile: composeFile,
+          workingDirectory: Settings.appDirectoryPath,
+          callback: (chars, isError) {
+            if (isError) {
+              throw StopException.dockerError(String.fromCharCodes(chars));
+            }
+          },
         ),
       ],
     );
