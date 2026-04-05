@@ -47,7 +47,7 @@ class RestoreBackup extends ConfigureStep {
   const RestoreBackup({this.restoreLast, this.bundleName});
 
   @override
-  Future<Step> configure() async {
+  Step configure() {
     late final String bundle;
     final Settings settings = Settings.fromDisk();
 
@@ -86,16 +86,6 @@ class RestoreBackup extends ConfigureStep {
     }
 
     final NatrixStdio io = NatrixStdio();
-
-    io.newLine(
-      text:
-          NatrixText("Selected backup: ", style: .bold) +
-          NatrixText(path.basename(bundle), foreground: .cyanAccent),
-    );
-    final NatrixMount mount = io.newLine(
-      text: NatrixText("Starts to restore backup..."),
-    );
-    await Future.delayed(Duration(seconds: 3));
     final Docker docker = Docker(
       onCallback: (context, chars, isError) {
         if (isError) {
@@ -118,6 +108,17 @@ class RestoreBackup extends ConfigureStep {
         }
       },
     );
+    final File composeFile = File(
+      path.join(Settings.appDirectoryPath, "frappe_docker", "pwd.yml"),
+    );
+    io.newLine(
+      text:
+          NatrixText("Selected backup: ", style: .bold) +
+          NatrixText(path.basename(bundle), foreground: .cyanAccent),
+    );
+    final NatrixMount mount = io.newLine(
+      text: NatrixText("Starts to restore backup..."),
+    );
     return Chain(
       steps: [
         Runnable(
@@ -127,8 +128,8 @@ class RestoreBackup extends ConfigureStep {
         // 1. Stop containers before restoring volumes
         dockerCompose.stop(
           compose.StopSettings(
-            composeFile: File(composeFilePath),
-            workingDirectory: workingDirectory,
+            composeFile: composeFile,
+            workingDirectory: Settings.appDirectoryPath,
           ),
         ),
         Runnable(

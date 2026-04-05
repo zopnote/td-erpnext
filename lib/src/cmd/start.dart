@@ -19,12 +19,9 @@ final NatrixCommand startCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
-
-    final Settings settings = Settings.fromDisk();
-
     await runWorkflow(
       Start(
-        appDirectoryPath: settings.appDirectoryPath,
+        appDirectoryPath: Settings.appDirectoryPath,
         onCallback: (context, chars, error) => context.send(
           Response(
             String.fromCharCodes(chars),

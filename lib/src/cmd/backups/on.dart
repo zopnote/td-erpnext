@@ -7,8 +7,8 @@ import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
 
 import 'package:td_erpnext/src/flags.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/setup_schedule.dart';
 import 'package:td_erpnext/src/steps/systemd/systemd.dart';
-
 
 final NatrixCommand backupsEnableCommand = NatrixCommand(
   id: "on",
@@ -24,8 +24,7 @@ final NatrixCommand backupsEnableCommand = NatrixCommand(
 
     final Response lastResponse = await runWorkflow(
       Systemd.get().setupSchedule(
-        args: ["backups", "create"],
-        interval: bP.value,
+        SetupScheduleSettings(args: ["backups", "create"], interval: bP.value),
       ),
       (response) => io.newLine(
         text: NatrixText(response.message),

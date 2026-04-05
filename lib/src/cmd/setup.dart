@@ -8,8 +8,10 @@ import 'package:stepflow/core.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
 
 import 'package:td_erpnext/src/settings.dart';
+import 'package:td_erpnext/src/steps/docker/docker.dart';
 import 'package:td_erpnext/src/steps/setup.dart';
-import 'package:td_erpnext/src/steps/docker.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/setup_autostart.dart';
+
 import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 final NatrixCommand setupCommand = NatrixCommand(
@@ -23,14 +25,15 @@ final NatrixCommand setupCommand = NatrixCommand(
       return;
     }
     final Systemd systemd = Systemd.get();
+    final Docker docker = Docker();
     final Settings settings = Settings.fromDisk();
 
     await runWorkflow(
       Chain(
         steps: [
           LogASCIIContext("Setup docker container..."),
-          ERPNextSetup(
-            appDirectoryPath: settings.appDirectoryPath,
+          Setup(
+            appDirectoryPath: Settings.appDirectoryPath,
             onCallback: (context, chars, error) => context.send(
               Response(
                 String.fromCharCodes(chars),
@@ -39,12 +42,14 @@ final NatrixCommand setupCommand = NatrixCommand(
             ),
           ),
           LogASCIIContext("Set restart policy of container..."),
-          Docker.update(
-            containers: [DockerContainer(settings.frontendContainer.value)],
-            config: DockerUpdateSettings(restart: DockerRestartPolicy.no),
+          docker.update(
+            UpdateSettings(
+              containers: [DockerContainer(settings.frontendContainer.value)],
+              config: DockerUpdateConfig(restart: DockerRestartPolicy.no),
+            ),
           ),
           LogASCIIContext("Add systemd boot service..."),
-          systemd.setupAutostart(args: ["start"]),
+          systemd.setupAutostart(SetupAutostartSettings(args: ["start"])),
         ],
       ),
       (response) => io.newLine(

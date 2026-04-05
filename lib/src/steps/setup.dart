@@ -5,42 +5,32 @@ import 'package:path/path.dart' as path;
 import 'package:stepflow/io.dart';
 import 'package:stepflow/core.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
+import 'package:td_erpnext/src/settings.dart';
 
 import 'package:td_erpnext/src/steps/create_directory.dart';
-import 'package:td_erpnext/src/steps/docker.dart';
+import 'package:td_erpnext/src/steps/docker_compose/docker_compose.dart';
 
-class ERPNextSetup extends ConfigureStep {
-  final DockerOutputCallback? onCallback;
-  final String appDirectoryPath;
+import 'docker/docker.dart';
 
-  ERPNextSetup._internal({this.onCallback, required this.appDirectoryPath});
-
-  factory ERPNextSetup({
-    DockerOutputCallback? onCallback,
-    required String appDirectoryPath,
-  }) {
-    return ERPNextSetup._internal(
-      onCallback: onCallback,
-      appDirectoryPath: appDirectoryPath,
-    );
-  }
-
-  late final DockerOutputCallback _grayedCallback = (context, chars, error) =>
-      this.onCallback?.call(
-        context,
-        LogColor.grayed(String.fromCharCodes(chars)).codeUnits,
-        error,
-      );
+class Setup extends ConfigureStep {
+  const Setup();
 
   @override
   Step configure() {
     final String composeFilePath = path.join(
-      appDirectoryPath,
+      Settings.appDirectoryPath,
       "frappe_docker",
       "pwd.yml",
     );
     final Directory repository = Directory(
-      path.join(appDirectoryPath, "frappe_docker"),
+      path.join(Settings.appDirectoryPath, "frappe_docker"),
+    );
+    final DockerCompose dockerCompose = DockerCompose(
+      onCallback: (context, chars, isError) {
+        if (isError) {
+          throw;
+        }
+      }
     );
     return Chain(
       steps: [
@@ -55,7 +45,7 @@ class ERPNextSetup extends ConfigureStep {
           child: Chain(
             steps: [
               CreateDirectory(
-                appDirectoryPath,
+                Settings.appDirectoryPath,
                 recursive: true,
                 deleteIfExists: true,
               ),
@@ -63,7 +53,7 @@ class ERPNextSetup extends ConfigureStep {
                 program: "git",
                 arguments: ["clone", "https://github.com/frappe/frappe_docker"],
                 options: ProcessInterfaceOptions(
-                  workingDirectory: appDirectoryPath,
+                  workingDirectory: Settings.appDirectoryPath,
                 ),
                 onStdout: (context, chars) =>
                     _grayedCallback.call(context, chars, false),
@@ -73,7 +63,7 @@ class ERPNextSetup extends ConfigureStep {
             ],
           ),
         ),
-        DockerCompose.init(
+        .init(
           composeFile: File(composeFilePath),
           workingDirectory: appDirectoryPath,
           detach: true,

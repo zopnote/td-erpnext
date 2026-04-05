@@ -6,6 +6,11 @@ import 'package:natrix/theme.dart';
 import 'package:stepflow/core.dart';
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/steps/create_directory.dart';
+import 'package:td_erpnext/src/steps/systemd/get_schedule.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/remove_autostart.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/remove_schedule.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/setup_autostart.dart';
+import 'package:td_erpnext/src/steps/systemd/steps/setup_schedule.dart';
 import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 import 'package:stepflow/src/io/steps/log_print.dart';
 
@@ -39,10 +44,12 @@ final NatrixCommand fixCommand = NatrixCommand(
             child: Chain(
               steps: [
                 LogASCIIContext("Reinstall systemd scheduler..."),
-                systemd.removeSchedule(),
+                systemd.removeSchedule(RemoveScheduleSettings()),
                 systemd.setupSchedule(
-                  args: ["backups", "create"],
-                  interval: systemd.getSchedule(),
+                  SetupScheduleSettings(
+                    args: ["backups", "create"],
+                    interval: systemd.getSchedule(),
+                  ),
                 ),
               ],
             ),
@@ -52,8 +59,8 @@ final NatrixCommand fixCommand = NatrixCommand(
             child: Chain(
               steps: [
                 LogASCIIContext("Reinstall systemd boot service..."),
-                systemd.removeAutostart(),
-                systemd.setupAutostart(args: ["start"]),
+                systemd.removeAutostart(RemoveAutostartSettings()),
+                systemd.setupAutostart(SetupAutostartSettings(args: ["start"])),
               ],
             ),
           ),
@@ -64,7 +71,7 @@ final NatrixCommand fixCommand = NatrixCommand(
             child: Chain(
               steps: [
                 LogASCIIContext("Create new configuration file..."),
-                Runnable((context) => Settings.base().dump()),
+                Runnable((context) => Settings().dump()),
               ],
             ),
           ),

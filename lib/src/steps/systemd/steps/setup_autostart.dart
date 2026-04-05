@@ -12,11 +12,11 @@ class SetupAutostartSettings
           SetupAutostartSettings,
           SetupAutostart
         > {
-  final List<String> arguments;
+  final List<String> args;
   final String? executablePath;
   final String? description;
   const SetupAutostartSettings({
-    required this.arguments,
+    required this.args,
     this.executablePath,
     this.description,
   });
@@ -62,7 +62,7 @@ class SetupAutostart extends SystemdStep<SetupAutostartSettings> {
           program: "sh",
           arguments: [
             "-c",
-            "echo '${step.bootService(exePath, wise.arguments.join(", "))}' | tee $serviceFilePath > /dev/null",
+            "echo '${step.bootService(exePath, wise.args.join(", "))}' | tee $serviceFilePath > /dev/null",
           ],
           options: options,
         ),

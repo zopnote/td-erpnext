@@ -11,6 +11,8 @@ import 'package:td_erpnext/src/steps/docker.dart';
 import 'package:td_erpnext/src/flags.dart';
 import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
+import '../steps/docker_compose/docker_compose.dart';
+
 final NatrixCommand statusCommand = NatrixCommand(
   id: "status",
   description: "Status information about the installation and the manager.",
@@ -25,7 +27,7 @@ final NatrixCommand statusCommand = NatrixCommand(
     final Settings settings = Settings.fromDisk();
 
     final String composeFilePath = path.join(
-      settings.appDirectoryPath,
+      Settings.appDirectoryPath,
       "frappe_docker",
       "pwd.yml",
     );
@@ -37,7 +39,7 @@ final NatrixCommand statusCommand = NatrixCommand(
     final bool installed = File(composeFilePath).existsSync();
     final bool running = DockerCompose.isRunning(
       composeFile: File(composeFilePath),
-      workingDirectory: settings.appDirectoryPath,
+      workingDirectory: Settings.appDirectoryPath,
     );
     final String? schedule = hasSchedule
         ? DurationFlag(id: "", value: systemd.getSchedule()).getFormatted()

@@ -6,12 +6,12 @@ import 'package:td_erpnext/src/steps/systemd/systemd.dart';
 
 class SetupScheduleSettings
     with StepWiser<Systemd, SetupScheduleSettings, SetupSchedule> {
-  final List<String> arguments;
+  final List<String> args;
   final String? executablePath;
   final String? description;
   final Duration interval;
   const SetupScheduleSettings({
-    required this.arguments,
+    required this.args,
     this.executablePath,
     this.description,
     this.interval = const Duration(days: 14),
@@ -67,7 +67,7 @@ class SetupSchedule extends SystemdStep<SetupScheduleSettings> {
           program: "sh",
           arguments: [
             "-c",
-            "echo '${step.recurringService(exePath, wise.arguments.join(" "))}' | tee $serviceFilePath > /dev/null",
+            "echo '${step.recurringService(exePath, wise.args.join(" "))}' | tee $serviceFilePath > /dev/null",
           ],
           options: options,
         ),
