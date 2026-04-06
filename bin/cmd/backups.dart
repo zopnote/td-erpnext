@@ -25,17 +25,20 @@ final NatrixCommand backupsCommand = NatrixCommand(
     final NatrixStdio io = NatrixStdio();
     final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
     if (options.getFlag("help").value) {
-      io.writeLines(lines: theme.root.format());
+      io.writeLines(lines: theme.syntax.format());
       return;
     }
 
     if (!systemd.hasSchedule()) {
       io.newLine(
-        text: NatrixText("Backups are currently disabled. See -h for more information.", foreground: .yellow),
+        text: NatrixText(
+          "Backups are currently disabled. See -h for more information.",
+          foreground: .yellow,
+        ),
         output: .stdout,
       );
     } else {
-      io.writeLines(lines: theme.root.format());
+      io.writeLines(lines: theme.syntax.format());
     }
   },
 );

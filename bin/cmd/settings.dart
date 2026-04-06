@@ -16,6 +16,6 @@ final NatrixCommand settingsCommand = NatrixCommand(
   callback: (options) {
     final NatrixStdio io = NatrixStdio();
     final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
-    io.writeLines(lines: theme.root.format());
+    io.writeLines(lines: theme.syntax.format());
   },
 );

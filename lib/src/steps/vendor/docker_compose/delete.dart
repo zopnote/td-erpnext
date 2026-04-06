@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:td_erpnext/src/steps/vendor/docker_compose.dart';
 import 'package:td_erpnext/src/utils.dart';
 
-class Shutdown extends DockerComposeStep {
+class Delete extends DockerComposeStep {
   final File? composeFile;
   final String? projectName;
   final bool removeVolumes;
   final bool removeImages;
-  const Shutdown({
+  const Delete({
     required this.composeFile,
     this.projectName,
     this.removeVolumes = false,
@@ -20,7 +20,7 @@ class Shutdown extends DockerComposeStep {
 
   @override
   List<String> format() => List.empty(growable: true)
-    ..addAllNotNull(composeFile, (v) => ["-f", "\"${v.path}\""])
+    ..addAllNotNull(composeFile, (v) => ["-f", "${v.path}"])
     ..add("down")
     ..addIf(removeVolumes, "-v")
     ..addAllIf(removeImages, [

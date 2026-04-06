@@ -24,7 +24,7 @@ jobs:
         with:
           sdk: stable
 
-      - name: Install dependencies
+      - name: Get dependencies
         run: dart pub get
 
       - name: Analyze project source

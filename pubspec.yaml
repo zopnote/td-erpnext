@@ -10,8 +10,9 @@ environment:
 
 dependencies:
   path: ^1.9.0
-  natrix:
-    path: ../natrix
+  natrix: ^0.1.3
   stepflow:
-    path: ../stepflow
+    git:
+      url: https://github.com/zopnote/stepflow.git
+      ref: 3.0.0-pre
   yaml: ^3.1.0

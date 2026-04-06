@@ -2,26 +2,46 @@ import 'dart:io';
 
 /// Checks if any containers defined in the compose file are currently running.
 bool isRunning({
-  File? composeFile,
+  required File composeFile,
   String? projectName,
   String? workingDirectory,
 }) {
-  final List<String> arguments = [];
-  if (composeFile != null) {
-    arguments.addAll(["-f", composeFile.path]);
-  }
+  final baseArgs = ["-f", composeFile.path];
   if (projectName != null) {
-    arguments.addAll(["-p", projectName]);
+    baseArgs.addAll(["-p", projectName]);
   }
-  arguments.addAll(["ps", "--quiet", "--filter", "status=running"]);
 
   try {
-    final result = Process.runSync(
-      "docker-compose",
-      arguments,
-      workingDirectory: workingDirectory,
-    );
-    return result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty;
+    // Container IDs holen
+    final psResult = Process.runSync("docker-compose", [
+      ...baseArgs,
+      "ps",
+      "--quiet",
+    ], workingDirectory: workingDirectory);
+
+    final ids = psResult.stdout
+        .toString()
+        .trim()
+        .split('\n')
+        .where((e) => e.isNotEmpty);
+
+    if (ids.isEmpty) return false;
+
+    // Prüfen ob mindestens einer läuft
+    for (final id in ids) {
+      final inspect = Process.runSync("docker", [
+        "inspect",
+        "-f",
+        "{{.State.Running}}",
+        id,
+      ]);
+
+      if (inspect.stdout.toString().trim() == "true") {
+        return true;
+      }
+    }
+
+    return false;
   } catch (_) {
     return false;
   }

@@ -10,42 +10,44 @@ import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
     as dockerCompose;
 import 'package:td_erpnext/src/utils.dart';
 
-class BackupException implements Exception {
-  static const BackupException unspecified = BackupException(
-    "Please either specify a backup name "
-    "or if the last backup should be restored.",
-  );
-  static const BackupException overspecified = BackupException(
-    "You can't restore the last bundle and "
-    "provide a specific bundle to restore at"
-    " the same time. Decide for one use case.",
-  );
-  static BackupException noBackups(String bundlesPath) => BackupException(
-    "There aren't any backups saved yet inside $bundlesPath.",
-  );
-  static BackupException notFound(String bundlePath) =>
-      BackupException("The backup bundle $bundlePath doesn't exist.");
-
-  final String message;
-  const BackupException(this.message);
-
+class BackupUnspecifiedException implements Exception {
+  const BackupUnspecifiedException();
   @override
-  String toString() => message;
+  String toString() =>
+      "Please either specify a backup name "
+      "or if the last backup should be restored.";
+}
 
+class BackupOverspecifiedException implements Exception {
+  const BackupOverspecifiedException();
   @override
-  bool operator ==(Object other) {
-    if (other is! BackupException) {
-      return false;
-    }
-    return message == other.message;
-  }
+  String toString() =>
+      "You can't restore the last bundle and "
+      "provide a specific bundle to restore at"
+      " the same time. Decide for one use case.";
+}
+
+class BackupNotFoundException implements Exception {
+  final String bundlePath;
+  const BackupNotFoundException(this.bundlePath);
+  @override
+  String toString() => "The backup bundle $bundlePath doesn't exist.";
+}
+
+class NoneBackupException implements Exception {
+  final String bundlesPath;
+  const NoneBackupException(this.bundlesPath);
+  @override
+  String toString() =>
+      "There aren't any backups saved yet inside $bundlesPath.";
 }
 
 class RestoreBackup extends ConfigureStep {
   final bool? restoreLast;
+  final bool hard;
   final String? bundleName;
 
-  const RestoreBackup({this.restoreLast, this.bundleName});
+  const RestoreBackup({this.restoreLast, this.bundleName, this.hard = false});
 
   @override
   Step configure() {
@@ -57,20 +59,20 @@ class RestoreBackup extends ConfigureStep {
     final Settings settings = Settings.fromDisk();
 
     if (bundleName == null && restoreLast == null) {
-      throw BackupException.unspecified;
+      throw BackupUnspecifiedException();
     }
 
     if (bundleName != null) {
-      if (restoreLast != null) {
-        throw BackupException.overspecified;
+      if (restoreLast != null && restoreLast!) {
+        throw BackupOverspecifiedException();
       }
       bundle = path.join(settings.backupStoragePath.value, bundleName);
     }
 
-    if (restoreLast != null) {
+    if (restoreLast != null && restoreLast!) {
       final bundlesDirectory = Directory(settings.backupStoragePath.value);
       if (!bundlesDirectory.existsSync()) {
-        throw BackupException.noBackups(bundlesDirectory.path);
+        throw NoneBackupException(bundlesDirectory.path);
       }
       final List<Directory> bundles = bundlesDirectory
           .listSync()
@@ -81,109 +83,145 @@ class RestoreBackup extends ConfigureStep {
         (a, b) => b.path.compareTo(a.path),
       );
       if (bundles.isEmpty) {
-        throw BackupException.noBackups(bundlesDirectory.path);
+        throw NoneBackupException(bundlesDirectory.path);
       }
       bundle = bundles.first.path;
     }
 
     if (!Directory(bundle).existsSync()) {
-      throw BackupException.notFound(bundle);
+      throw BackupNotFoundException(bundle);
     }
 
     final NatrixStdio io = NatrixStdio();
-    final docker.OutputCallback dockerCallback = (chars, isError) {
-      if (isError) {
-        throw BackupException(
-          "An unexpected error occurred inside "
-          "docker while restoring the backup: "
-          "${String.fromCharCodes(chars)}",
-        );
-      }
+    final docker.OutputCallback dockerCallback = (chars) {
+      io.pipe(
+        text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent),
+      );
     };
-    dockerCompose.OutputCallback composeCallback = (chars, isError) {
-      if (isError) {
-        throw BackupException(
-          "An unexpected error occurred inside "
-          "docker while restoring the backup: "
-          "${String.fromCharCodes(chars)}",
-        );
-      }
+    dockerCompose.OutputCallback composeCallback = (chars) {
+      io.pipe(
+        text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent),
+      );
     };
     io.newLine(
       text:
           NatrixText("Selected backup: ", style: .bold) +
           NatrixText(path.basename(bundle), foreground: .cyanAccent),
     );
-    final NatrixMount mount = io.newLine();
     return Chain(
       steps: [
-        RenewNatrixLine(
-          mount: mount,
-          text: const NatrixText("Stops container..."),
-        ),
-        // 1. Stop containers before restoring volumes
+        const PrintNatrixLine(text: NatrixText("Stops container...")),
         dockerCompose.Stop(
           composeFile: composeFile,
           workingDirectory: Settings.appDirectoryPath,
           callback: composeCallback,
         ),
-        RenewNatrixLine(
-          mount: mount,
-          text: const NatrixText("Cleaning up old backend container volume..."),
+        const PrintNatrixLine(text: NatrixText("Cleaning up old volumes...")),
+        docker.Run(
+          image: docker.Image.busybox,
+          program: "rm",
+          args: ["-rf", "/volume/*"],
+          remove: true,
+          volumes: [
+            docker.Volume(
+              containerPath: "/volume",
+              volumeName: settings.sitesVolume.value,
+            ),
+          ],
+          callback: dockerCallback,
         ),
         docker.Run(
           image: docker.Image.busybox,
           program: "rm",
-          args: ["-r", "-f", "/home/frappe/frappe-bench/**/**"],
-          callback: dockerCallback,
+          args: ["-rf", "/volume/*"],
           remove: true,
-          volumesFrom: [docker.Container(settings.backendContainer.value)],
-        ),
-        RenewNatrixLine(
-          mount: mount,
-          text: const NatrixText(
-            "Cleaning up old frontend container volume...",
-          ),
+          volumes: [
+            docker.Volume(
+              containerPath: "/volume",
+              volumeName: settings.databaseVolume.value,
+            ),
+          ],
+          callback: dockerCallback,
         ),
         docker.Run(
           image: docker.Image.busybox,
           program: "rm",
-          callback: dockerCallback,
-          args: ["-r", "-f", "/home/frappe/frappe-bench/**/**"],
+          args: ["-rf", "/volume/*"],
           remove: true,
-          volumesFrom: [docker.Container(settings.frontendContainer.value)],
+          volumes: [
+            docker.Volume(
+              containerPath: "/volume",
+              volumeName: settings.redisCacheVolume.value,
+            ),
+          ],
+          callback: dockerCallback,
         ),
-        RenewNatrixLine(
-          mount: mount,
-          text: const NatrixText("Restore volumes..."),
+        docker.Run(
+          image: docker.Image.busybox,
+          program: "rm",
+          args: ["-rf", "/volume/*"],
+          remove: true,
+          volumes: [
+            docker.Volume(
+              containerPath: "/volume",
+              volumeName: settings.redisQueueVolume.value,
+            ),
+          ],
+          callback: dockerCallback,
         ),
-
+        const PrintNatrixLine(text: NatrixText("Restore backup...")),
         docker.Run(
           image: docker.Image.busybox,
           program: "tar",
-          callback: dockerCallback,
-          args: ["-xvzf", "backup/erpnext_volumes_backup.tar.gz", "-C", "/"],
+          args: [
+            "-xvzf",
+            "backup/sites.tar.gz",
+            "-C",
+            "/sites"
+          ],
           remove: true,
-          volumesFrom: [docker.Container(settings.backendContainer.value)],
           volumes: [
             docker.Volume(
-              hostPath: settings.backupStoragePath.value,
+              containerPath: "/sites",
+              volumeName: settings.sitesVolume.value,
+            ),
+            docker.Volume(
+              hostPath: bundle,
               containerPath: "/backup",
             ),
           ],
+          callback: dockerCallback,
         ),
-        RenewNatrixLine(
-          mount: mount,
-          text: const NatrixText("Restart container..."),
+        docker.Run(
+          image: docker.Image.busybox,
+          program: "tar",
+          args: [
+            "-xvzf",
+            "backup/database.tar.gz",
+            "-C",
+            "/database",
+          ],
+          remove: true,
+          volumes: [
+            docker.Volume(
+              containerPath: "/database",
+              volumeName: settings.databaseVolume.value,
+            ),
+            docker.Volume(
+              hostPath: bundle,
+              containerPath: "/backup",
+            ),
+          ],
+          callback: dockerCallback,
         ),
-        // 3. Start containers again
+        const PrintNatrixLine(text: NatrixText("Restart container...")),
         dockerCompose.Init(
           composeFile: composeFile,
           detach: true,
           workingDirectory: Settings.appDirectoryPath,
           callback: composeCallback,
         ),
-        RenewNatrixLine(mount: mount, text: const NatrixText("Done.")),
+        const PrintNatrixLine(text: NatrixText("Restored the backup.")),
       ],
     );
   }

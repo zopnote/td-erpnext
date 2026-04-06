@@ -15,7 +15,7 @@ export 'package:td_erpnext/src/steps/vendor/docker/stop.dart';
 export 'package:td_erpnext/src/steps/vendor/docker/update.dart';
 
 /// Callback signature for process output.
-typedef OutputCallback = FutureOr<void> Function(List<int> chars, bool isError);
+typedef OutputCallback = FutureOr<void> Function(List<int> chars);
 
 abstract class DockerStep extends ConfigureStep {
   final OutputCallback? callback;
@@ -31,8 +31,8 @@ abstract class DockerStep extends ConfigureStep {
     program: programCallLiteral ?? "docker",
     arguments: format(),
     options: const ProcessInterfaceOptions(runAsAdministrator: true),
-    onStdout: (chars) => callback?.call(chars, false),
-    onStderr: (chars) => callback?.call(chars, true),
+    onStdout: (chars) => callback?.call(chars),
+    onStderr: (chars) => callback?.call(chars),
   );
   List<String> format();
 }
@@ -72,11 +72,22 @@ class Location {
 
 /// Represents a Docker Volume mapping (host:container).
 class Volume {
-  final String hostPath;
+  final String? volumeName;
+  final String? hostPath;
   final String containerPath;
 
-  const Volume({required this.hostPath, required this.containerPath});
+  const Volume({this.volumeName, this.hostPath, required this.containerPath});
 
   @override
-  String toString() => "${path.absolute(hostPath)}:$containerPath";
+  String toString() {
+    if (volumeName != null) {
+      return "$volumeName:$containerPath";
+
+    }
+    if (hostPath == null) {
+      throw Exception("Specify either a volume name or an host path.");
+    }
+    return "${path.absolute(hostPath!)}:$containerPath";
+  }
+
 }

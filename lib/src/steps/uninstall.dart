@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:natrix/io.dart';
-import 'package:path/path.dart' as path;
 import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
 
@@ -15,10 +14,6 @@ class UninstallException implements Exception {
   final String message;
   const UninstallException(this.message);
 
-  static UninstallException dockerError(String error) => UninstallException(
-    "An error occurred while the "
-    "shutdown of the docker container: $error",
-  );
   @override
   String toString() => message;
 
@@ -32,8 +27,8 @@ class UninstallException implements Exception {
 }
 
 class Uninstall extends ConfigureStep {
-  final bool removeBackups;
-  const Uninstall({this.removeBackups = false});
+  final bool hard;
+  const Uninstall({this.hard = false});
 
   @override
   Step configure() {
@@ -41,24 +36,26 @@ class Uninstall extends ConfigureStep {
     if (!composeFile.existsSync()) {
       throw InstallationNotFoundException();
     }
+
+    final void Function(List<int>) onStderr = (chars) {
+      final String s = String.fromCharCodes(chars);
+      if (s.toLowerCase().contains("error")) {
+        throw UninstallException(s);
+      }
+    };
+
     final NatrixStdio io = NatrixStdio();
     final Settings settings = Settings.fromDisk();
-    final void Function(List<int>) outputCallback = (chars) =>
-        io.newLine(text: NatrixText(String.fromCharCodes(chars)));
     return Chain(
       steps: [
-        const PrintNatrixLine(
-          text: NatrixText("Uninstall dockerimages and -volumes..."),
-        ),
-        dockerCompose.Shutdown(
+        const PrintNatrixLine(text: NatrixText("Remove docker container...")),
+        dockerCompose.Delete(
           composeFile: composeFile,
           removeImages: true,
           removeVolumes: true,
           workingDirectory: Settings.appDirectoryPath,
-          callback: (chars, isError) {
-            if (isError) {
-              throw UninstallException.dockerError(String.fromCharCodes(chars));
-            }
+          callback: (chars) {
+            io.pipe(text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent));
           },
         ),
         PrintNatrixLine(
@@ -67,9 +64,10 @@ class Uninstall extends ConfigureStep {
         Shell(
           program: "rm",
           arguments: ["-r", "-f", Settings.appDirectoryPath],
+          onStderr: onStderr,
         ),
         Conditional(
-          condition: removeBackups,
+          condition: hard,
           child: Chain(
             steps: [
               PrintNatrixLine(
@@ -79,9 +77,25 @@ class Uninstall extends ConfigureStep {
               ),
               Shell(
                 program: "rm",
-                arguments: ["-r", "f", settings.backupStoragePath.value],
-                onStderr: (chars) => outputCallback(chars),
-                onStdout: (chars) => outputCallback(chars),
+                arguments: ["-r", "-f", settings.backupStoragePath.value],
+                onStderr: onStderr,
+              ),
+              Conditional(
+                condition: File(Settings.settingsFilePath).existsSync(),
+                child: Chain(
+                  steps: [
+                    PrintNatrixLine(
+                      text: NatrixText(
+                        "Remove ${Settings.settingsFilePath}...",
+                      ),
+                    ),
+                    Shell(
+                      program: "rm",
+                      arguments: ["-f", Settings.settingsFilePath],
+                      onStderr: onStderr,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

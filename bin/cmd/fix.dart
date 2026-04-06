@@ -10,8 +10,8 @@ final NatrixCommand fixCommand = NatrixCommand(
   inheritFlags: true,
   flags: [
     NatrixBoolFlag(
-      id: "reset",
-      tooltip: "Resets all settings and configuration.",
+      id: "hard",
+      tooltip: "Resets all configuration.",
       value: false,
     ),
   ],
@@ -19,11 +19,11 @@ final NatrixCommand fixCommand = NatrixCommand(
     final NatrixStdio io = NatrixStdio();
     final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
     if (options.getFlag("help").value) {
-      io.writeLines(lines: theme.root.format());
+      io.writeLines(lines: theme.syntax.format());
       return;
     }
     await runWorkflow(
-      Fix(resetSettings: options.getFlag("reset").value),
+      Fix(hard: options.getFlag("hard").value),
       (e) => io.newLine(
         text: NatrixText(e.exception.toString(), foreground: .red),
         output: .stderr,

@@ -1,57 +1,35 @@
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
-
+import 'package:natrix/io.dart';
 import 'package:stepflow/io.dart';
 import 'package:stepflow/core.dart';
+
 import 'package:td_erpnext/src/settings.dart';
+import 'package:td_erpnext/src/steps/vendor/docker.dart' as docker;
 import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
     as dockerCompose;
+import 'package:td_erpnext/src/steps/vendor/systemd.dart' as systemd;
 import 'package:td_erpnext/src/utils.dart';
 
-class SetupException implements Exception {
-  const SetupException(this.message);
-  final String message;
-  static SetupException dockerCompose(String error) => SetupException(
-    "An unexpected error occurred inside "
-    "docker compose while setup of the erpnext "
-    "installation: $error",
-  );
-  static SetupException unavailableDependencies(List<String> dependencies) {
-    return SetupException(
-      "The following dependencies aren't satisfied: ${dependencies.join(", ")}. ",
-    );
-  }
-
-  @override
-  String toString() => message;
-
-  @override
-  bool operator ==(Object other) {
-    if (other is! SetupException) {
-      return false;
-    }
-    return other.message == message;
-  }
-}
-
 class Setup extends ConfigureStep {
-  const Setup();
+  final String? tag;
+  const Setup({this.tag});
 
   @override
   Step configure() {
-    final File composeFile = File(
-      path.join(Settings.appDirectoryPath, "frappe_docker", "pwd.yml"),
-    );
-    final Directory repository = Directory(
-      path.join(Settings.appDirectoryPath, "frappe_docker"),
-    );
+    final File composeFile = File(Settings.composeFilePath);
+    if (composeFile.existsSync()) {
+      throw AlreadyInstalledException();
+    }
+    final Directory repository = Directory(Settings.repositoryPath);
+    final NatrixStdio io = NatrixStdio();
+    final Settings settings = Settings.fromDisk();
     return Chain(
       steps: [
         Check(
           programs: ["docker", "git", "systemctl", "systemd"],
           onFailure: (programs) =>
-              throw SetupException.unavailableDependencies(programs),
+              throw UnavailableDependenciesException(programs),
         ),
         Conditional(
           condition: !repository.existsSync(),
@@ -64,7 +42,9 @@ class Setup extends ConfigureStep {
               ),
               Shell(
                 program: "git",
-                arguments: ["clone", "https://github.com/frappe/frappe_docker"],
+                arguments: ["clone",
+                  if (tag != null) ...["--branch", tag!, "--single-branch"],
+                  "https://github.com/frappe/frappe_docker"],
                 options: ProcessInterfaceOptions(
                   workingDirectory: Settings.appDirectoryPath,
                 ),
@@ -72,16 +52,42 @@ class Setup extends ConfigureStep {
             ],
           ),
         ),
+        const PrintNatrixLine(text: NatrixText("Setup docker container...")),
         dockerCompose.Init(
           composeFile: composeFile,
           detach: true,
           workingDirectory: Settings.appDirectoryPath,
-          callback: (chars, isError) {
-            if (isError) {
-              throw SetupException.dockerCompose(String.fromCharCodes(chars));
-            }
-          },
+          callback: (chars) => io.pipe(
+            text: NatrixText(
+              String.fromCharCodes(chars),
+              foreground: .grayAccent,
+            ),
+          ),
         ),
+        const PrintNatrixLine(
+          text: NatrixText("Set restart policy of container..."),
+        ),
+        docker.Update(
+          containers: [
+            docker.Container(settings.backendContainer.value),
+            docker.Container(settings.frontendContainer.value),
+            docker.Container(settings.websocketContainer.value),
+            docker.Container(settings.schedulerContainer.value),
+          ],
+          restart: docker.RestartPolicy.no,
+          callback: (chars) => io.pipe(
+            text: NatrixText(
+              String.fromCharCodes(chars),
+              foreground: .grayAccent,
+            ),
+          ),
+        ),
+        const PrintNatrixLine(text: NatrixText("Add systemd boot service...")),
+        systemd.SetupAutostart(args: ["start"]),
+        const PrintNatrixLine(
+          text: NatrixText("Writes default configuration to disk..."),
+        ),
+        Runnable(() => settings.dump()),
       ],
     );
   }

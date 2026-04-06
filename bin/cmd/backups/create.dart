@@ -12,7 +12,7 @@ final NatrixCommand backupsCreateCommand = NatrixCommand(
     final NatrixStdio io = NatrixStdio();
     final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
     if (options.getFlag("help").value) {
-      io.writeLines(lines: theme.root.format());
+      io.writeLines(lines: theme.syntax.format());
       return;
     }
     await runWorkflow(

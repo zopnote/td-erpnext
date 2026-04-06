@@ -5,13 +5,22 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as path;
 
 final class Settings {
-  /// Sets the port this manager tries to connect to of the
-  /// frontend of the running erpnext in the docker container.
-  final Setting<int> port;
+  /// Sets the docker container name this manager tries to connect
+  /// to of the frontend of the running erpnext in the docker container.
+  final Setting<String> sitesVolume;
 
-  /// Sets the current site this manager tries to connect to
-  /// of the frontend of the running erpnext in the docker container.
-  final Setting<String> frontendSite;
+  /// Sets the docker container name this manager tries to connect
+  /// to of the frontend of the running erpnext in the docker container.
+  final Setting<String> databaseVolume;
+
+
+  /// Sets the docker container name this manager tries to connect
+  /// to of the frontend of the running erpnext in the docker container.
+  final Setting<String> redisCacheVolume;
+
+  /// Sets the docker container name this manager tries to connect
+  /// to of the frontend of the running erpnext in the docker container.
+  final Setting<String> redisQueueVolume;
 
   /// Sets the docker container name this manager tries to connect
   /// to of the frontend of the running erpnext in the docker container.
@@ -21,21 +30,26 @@ final class Settings {
   /// to of the frontend of the running erpnext in the docker container.
   final Setting<String> backendContainer;
 
+  /// Sets the docker container name this manager tries to connect
+  /// to of the frontend of the running erpnext in the docker container.
+  final Setting<String> websocketContainer;
+
+  /// Sets the docker container name this manager tries to connect
+  /// to of the frontend of the running erpnext in the docker container.
+  final Setting<String> schedulerContainer;
+
   /// Location relative to the apps root where the log
   /// files of the working process are stored.
   final Setting<String> backupStoragePath;
-
-  /// The root password of the database of the erpnext installation.
-  final Setting<String> databasePassword;
 
   /// Name of the systemd services installed by this application.
   static String get serviceName => "td_erpnext";
 
   /// Location relative to the apps binary root where the configuration file gets stored.
-  static String get settingsFileName => "conf.json";
+  static String get settingsFileName => "settings.json";
 
   /// Location of the configuration file, where the essential settings get stored for persistence.
-  static String get configurationFilePath =>
+  static String get settingsFilePath =>
       path.join(rootDirectoryPath, settingsFileName);
 
   /// Location relative to the apps root where the log files are stored.
@@ -65,41 +79,70 @@ final class Settings {
   static String get composeFilePath => path.join(repositoryPath, "pwd.yml");
 
   factory Settings._build({
-    required String? frontendSite,
-    required int? port,
-    required String? frontendContainer,
-    required String? backendContainer,
+    required String? sitesVolume,
+    required String? databaseVolume,
     required String? backupStoragePath,
-    required String? databasePassword,
   }) {
     return Settings._internal(
-      port: IntSetting(
-        key: "port",
-        value: port ?? 8080,
+      backendContainer: StringSetting(
+        key: "backend_container",
+        value: "frappe_docker_backend_1",
         description:
-            "The port this manager tries to connect "
-            "to of the frontend of the running erpnext"
-            "in the docker container.",
-      ),
-      frontendSite: StringSetting(
-        key: "site",
-        value: frontendSite ?? "frontend",
-        description:
-            "Sets the current site this manager tries "
-            "to connect to of the frontend of the running "
+            "The docker container id this manager tries "
+            "to connect to of the backend of the running "
             "erpnext in the docker container.",
       ),
       frontendContainer: StringSetting(
         key: "frontend_container",
-        value: frontendContainer ?? "frappe_docker_frontend_1",
+        value: "frappe_docker_frontend_1",
         description:
             "The docker container id this manager tries "
             "to connect to of the frontend of the running "
             "erpnext in the docker container.",
       ),
-      backendContainer: StringSetting(
-        key: "backend_container",
-        value: backendContainer ?? "frappe_docker_backend_1",
+      schedulerContainer: StringSetting(
+        key: "scheduler_container",
+        value: "frappe_docker_scheduler_1",
+        description:
+            "The docker container id this manager tries "
+            "to connect to of the backend of the running "
+            "erpnext in the docker container.",
+      ),
+      websocketContainer: StringSetting(
+        key: "websocket_container",
+        value: "frappe_docker_websocket_1",
+        description:
+            "The docker container id this manager tries "
+            "to connect to of the frontend of the running "
+            "erpnext in the docker container.",
+      ),
+      redisCacheVolume: StringSetting(
+        key: "redis_cache_volume",
+        value: "frappe_docker_redis-cache",
+        description:
+            "The docker container id this manager tries "
+            "to connect to of the backend of the running "
+            "erpnext in the docker container.",
+      ),
+      redisQueueVolume: StringSetting(
+        key: "redis_queue_volume",
+        value: "frappe_docker_redis-queue-data",
+        description:
+            "The docker container id this manager tries "
+            "to connect to of the frontend of the running "
+            "erpnext in the docker container.",
+      ),
+      sitesVolume: StringSetting(
+        key: "sites_volume",
+        value: sitesVolume ?? "frappe_docker_sites",
+        description:
+            "The docker container id this manager tries "
+            "to connect to of the frontend of the running "
+            "erpnext in the docker container.",
+      ),
+      databaseVolume: StringSetting(
+        key: "database_volume",
+        value: databaseVolume ?? "frappe_docker_db-data",
         description:
             "The docker container id this manager tries "
             "to connect to of the backend of the running "
@@ -113,48 +156,37 @@ final class Settings {
             "The backup directory where backups get stored. "
             "Path in the filesystem.",
       ),
-      databasePassword: StringSetting(
-        key: "password",
-        value: databasePassword ?? "admin",
-        description:
-            "The root password of the database of the erpnext installation.",
-      ),
     );
   }
 
   Settings._internal({
-    required this.port,
-    required this.frontendSite,
+    required this.sitesVolume,
+    required this.databaseVolume,
+    required this.backupStoragePath,
     required this.frontendContainer,
     required this.backendContainer,
-    required this.backupStoragePath,
-    required this.databasePassword,
+    required this.redisCacheVolume,
+    required this.redisQueueVolume, required this.websocketContainer, required this.schedulerContainer,
   });
 
   factory Settings.new() => Settings._build(
-    frontendSite: null,
-    port: null,
-    frontendContainer: null,
-    backendContainer: null,
+    sitesVolume: null,
+    databaseVolume: null,
     backupStoragePath: null,
-    databasePassword: null,
   );
 
   static Settings fromDisk() {
     final Settings s = Settings();
     try {
-      final File file = File(configurationFilePath);
+      final File file = File(settingsFilePath);
       if (!file.existsSync()) return s;
 
       final Uint8List bytes = file.readAsBytesSync();
       final Map<String, dynamic> doc = jsonDecode(String.fromCharCodes(bytes));
       return Settings._build(
-        frontendSite: doc[s.frontendSite.key],
-        port: doc[s.port.key],
-        frontendContainer: doc[s.frontendContainer.key],
-        backendContainer: doc[s.backendContainer.key],
+        sitesVolume: doc[s.sitesVolume.key],
+        databaseVolume: doc[s.databaseVolume.key],
         backupStoragePath: doc[s.backupStoragePath.key],
-        databasePassword: doc[s.databasePassword.key],
       );
     } catch (e) {
       print("[Settings.load] Error loading configuration: $e");
@@ -165,7 +197,7 @@ final class Settings {
   /// Saves the current settings to the configuration file.
   void dump() {
     try {
-      final File file = File(configurationFilePath);
+      final File file = File(settingsFilePath);
       if (!file.parent.existsSync()) {
         file.parent.createSync(recursive: true);
       }

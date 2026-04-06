@@ -1,4 +1,5 @@
 # ERPNext easy setup- and managertool
+> Outdated for commits after the 6th of April 2026
 ````bash
 $ sudo ./bin/td-erpnext --help
 

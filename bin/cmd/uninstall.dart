@@ -14,11 +14,11 @@ final NatrixCommand uninstallCommand = NatrixCommand(
     final NatrixStdio io = NatrixStdio();
     final NatrixTheme theme = NatrixDefaultTheme.of(options.getContext());
     if (options.getFlag("help").value) {
-      io.writeLines(lines: theme.root.format());
+      io.writeLines(lines: theme.syntax.format());
       return;
     }
     await runWorkflow(
-      Uninstall(removeBackups: options.getFlag("hard").value),
+      Uninstall(hard: options.getFlag("hard").value),
       (e) => io.newLine(
         text: NatrixText(e.exception.toString(), foreground: .red),
         output: .stderr,

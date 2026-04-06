@@ -18,17 +18,22 @@ final NatrixCommand backupsDisableCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
+    bool error = false;
     await runWorkflow(
       systemd.RemoveSchedule(),
-      (e) => io.newLine(
-        text: NatrixText(e.exception.toString(), foreground: .red),
-        output: .stderr,
-      ),
+      (e) {
+        error = true;
+        io.newLine(
+          text: NatrixText(e.exception.toString(), foreground: .red),
+          output: .stderr,
+        );
+      },
     );
-
-    io.newLine(
-      text: NatrixText("Removed the scheduler service."),
-      output: .stdout,
-    );
+    if (!error) {
+      io.newLine(
+        text: NatrixText("Removed the scheduler service successfully."),
+        output: .stdout,
+      );
+    }
   },
 );
