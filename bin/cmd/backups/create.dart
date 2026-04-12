@@ -17,7 +17,7 @@ final NatrixCommand backupsCreateCommand = NatrixCommand(
     }
     await runWorkflow(
       const CreateBackup(),
-      (e) => io.newLine(
+      (e) => io.pipe(
         text: NatrixText(e.exception.toString(), foreground: .red),
         output: .stderr,
       ),

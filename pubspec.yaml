@@ -1,7 +1,7 @@
 name: td_erpnext
 executable: td-erpnext
 description: Tool for automize backups and the management of the erpnext service under ubuntu.
-version: 1.0.0
+version: 1.0.1
 publish_to: none
 entrypoint: main.dart
 

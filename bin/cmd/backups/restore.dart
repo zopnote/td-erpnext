@@ -36,7 +36,7 @@ final NatrixCommand backupsRestoreCommand = NatrixCommand(
     }
     await runWorkflow(
       RestoreBackup(restoreLast: false, bundleName: options.args.first),
-      (e) => io.newLine(
+      (e) => io.pipe(
         text: NatrixText(e.exception.toString(), foreground: .red),
         output: .stderr,
       ),

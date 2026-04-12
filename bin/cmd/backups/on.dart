@@ -29,7 +29,7 @@ final NatrixCommand backupsEnableCommand = NatrixCommand(
       ),
       (e) {
         error = true;
-        io.newLine(
+        io.pipe(
           text: NatrixText(e.exception.toString(), foreground: .red),
           output: .stderr,
         );

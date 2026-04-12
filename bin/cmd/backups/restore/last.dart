@@ -14,6 +14,10 @@ final NatrixCommand backupsRestoreLastCommand = NatrixCommand(
       io.writeLines(lines: theme.root.format());
       return;
     }
-    await runWorkflow(const RestoreBackup(restoreLast: true));
+    await runWorkflow(const RestoreBackup(restoreLast: true),
+            (e) => io.pipe(
+          text: NatrixText(e.exception.toString(), foreground: .red),
+          output: .stderr,
+        ));
   },
 );

@@ -24,7 +24,7 @@ final NatrixCommand fixCommand = NatrixCommand(
     }
     await runWorkflow(
       Fix(hard: options.getFlag("hard").value),
-      (e) => io.newLine(
+      (e) => io.pipe(
         text: NatrixText(e.exception.toString(), foreground: .red),
         output: .stderr,
       ),

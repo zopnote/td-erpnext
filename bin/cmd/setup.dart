@@ -18,7 +18,7 @@ final NatrixCommand setupCommand = NatrixCommand(
     final String tag = options.getFlag("tag").value;
     await runWorkflow(
       Setup(tag: tag.isEmpty ? null : tag),
-      (e) => io.newLine(
+      (e) => io.pipe(
         text: NatrixText(e.exception.toString(), foreground: .red),
         output: .stderr,
       ),
