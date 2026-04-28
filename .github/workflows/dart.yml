@@ -45,7 +45,7 @@ jobs:
         run: dart pub get
 
       - name: Run build script
-        run: dart build.dart
+        run: dart scripts/build.dart
 
       - name: Package Release
         run: |
