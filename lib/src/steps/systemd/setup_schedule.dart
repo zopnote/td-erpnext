@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
-import 'package:td_erpnext/src/steps/vendor/systemd.dart';
+
+import '../systemd.dart';
 
 class SetupSchedule extends SystemdStep {
   final List<String> args;

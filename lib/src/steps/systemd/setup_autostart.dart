@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
 
 import '../systemd.dart';

@@ -4,12 +4,13 @@ import 'package:natrix/io.dart';
 import 'package:path/path.dart' as path;
 import 'package:stepflow/core.dart';
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/src/steps/vendor/docker.dart' as docker;
-import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
-    as dockerCompose;
-import 'package:td_erpnext/src/utils.dart';
+import 'package:stepflow_docker/docker.dart' as docker;
 
-class CreateBackup extends ConfigureStep {
+import '../exception.dart';
+import 'recreate_directory.dart';
+import 'natrix.dart';
+
+final class CreateBackup extends ConfigureStep {
   final NatrixStdoutSink? output;
   const CreateBackup({this.output});
 
@@ -19,15 +20,14 @@ class CreateBackup extends ConfigureStep {
     if (!composeFile.existsSync()) {
       throw InstallationNotFoundException();
     }
-    final NatrixStdio io = NatrixStdio();
     final Settings settings = Settings.fromDisk();
     final docker.OutputCallback callback = (chars) {
-      io.pipe(
+      NatrixStdio().pipe(
         text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent),
         output: output ?? .stdout,
       );
     };
-    final String storesBackupPath = path.join(
+    final String backupPath = path.join(
       settings.backupStoragePath.value,
       DateTime.now()
           .toLocal()
@@ -35,65 +35,45 @@ class CreateBackup extends ConfigureStep {
           .substring(0, 18)
           .replaceAll(":", "_"),
     );
+    final docker.Container backend = docker.Container(
+      settings.backendContainer.value,
+    );
     return Chain(
       steps: [
         Conditional(
-          condition: !Directory(storesBackupPath).existsSync(),
-          child: Chain(
-            steps: [CreateDirectory(storesBackupPath, recursive: true)],
-          ),
+          condition: !Directory(backupPath).existsSync(),
+          child: RecreateDirectory(backupPath, recursive: true),
         ),
-        Conditional(
-          condition: dockerCompose.isRunning(composeFile: composeFile),
-          child: Chain(
-            steps: [
-              const PrintNatrixLine(
-                text: NatrixText("Stop running containers..."),
-              ),
-              dockerCompose.Stop(composeFile: composeFile, callback: callback),
-            ],
-          ),
-        ),
-        const PrintNatrixLine(text: NatrixText("Backup sites...")),
-        docker.Run(
-          image: docker.Image.busybox,
-          program: "tar",
-          args: ["-cvzf", "/backup/sites.tar.gz", "-C", "/volume", "."],
-          remove: true,
-          volumes: [
-            docker.Volume(
-              volumeName: settings.sitesVolume.value,
-              containerPath: "/volume",
-            ),
-            docker.Volume(hostPath: storesBackupPath, containerPath: "/backup"),
-          ],
+        docker.Execute(
+          container: backend,
+          program: "bench",
+          args: ["--site", Settings.siteName, "backup", "--with-files"],
           callback: callback,
         ),
-        const PrintNatrixLine(text: NatrixText("Backup database...")),
-        docker.Run(
-          image: docker.Image.busybox,
-          program: "tar",
-          args: ["-cvzf", "/backup/database.tar.gz", "-C", "/volume", "."],
-          remove: true,
-          volumes: [
-            docker.Volume(
-              volumeName: settings.databaseVolume.value,
-              containerPath: "/volume",
-            ),
-            docker.Volume(hostPath: storesBackupPath, containerPath: "/backup"),
-          ],
+        docker.Copy(
+          source: docker.Location.container(
+            backend,
+            "/home/frappe/frappe-bench/sites/${Settings.siteName}/private/backups/",
+          ),
+          destination: docker.Location.host(backupPath),
           callback: callback,
         ),
-        const PrintNatrixLine(text: NatrixText("Start containers...")),
-        dockerCompose.Init(composeFile: composeFile, detach: true, callback: callback),
+        docker.Copy(
+          source: docker.Location.container(
+            backend,
+            "/home/frappe/frappe-bench/sites/${Settings.siteName}/site_config.json",
+          ),
+          destination: docker.Location.host(backupPath),
+          callback: callback,
+        ),
         PrintNatrixLine(
           text:
-          NatrixText("Backup ") +
+              NatrixText("Backup ") +
               NatrixText(
-                path.basename(storesBackupPath),
+                path.basename(backupPath),
                 foreground: NatrixColor.cyanAccent,
               ) +
-              NatrixText(" stored under ${path.dirname(storesBackupPath)}."),
+              NatrixText(" stored under ${path.dirname(backupPath)}."),
         ),
       ],
     );

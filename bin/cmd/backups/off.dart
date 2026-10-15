@@ -5,7 +5,7 @@ import 'package:natrix/io.dart';
 import 'package:natrix/theme.dart';
 
 import 'package:stepflow/core.dart';
-import 'package:td_erpnext/src/steps/vendor/systemd.dart' as systemd;
+import 'package:stepflow_systemd/systemd.dart' as systemd;
 
 final NatrixCommand backupsDisableCommand = NatrixCommand(
   id: "off",

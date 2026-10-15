@@ -1,14 +1,14 @@
 import 'dart:io';
 
 import 'package:natrix/io.dart';
-import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
 
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
-    as dockerCompose;
-import 'package:td_erpnext/src/steps/vendor/systemd.dart' as systemd;
-import 'package:td_erpnext/src/utils.dart';
+import 'package:stepflow_docker/docker_compose.dart' as dockerCompose;
+import 'package:stepflow_systemd/systemd.dart' as systemd;
+
+import '../exception.dart';
+import 'natrix.dart';
 
 class UninstallException implements Exception {
   final String message;
@@ -43,23 +43,23 @@ class Uninstall extends ConfigureStep {
         throw UninstallException(s);
       }
     };
-
-    final NatrixStdio io = NatrixStdio();
     final Settings settings = Settings.fromDisk();
+
     return Chain(
       steps: [
-        const PrintNatrixLine(text: NatrixText("Remove docker container...")),
         dockerCompose.Delete(
           composeFile: composeFile,
           removeImages: true,
           removeVolumes: true,
           workingDirectory: Settings.appDirectoryPath,
           callback: (chars) {
-            io.pipe(text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent));
+            NatrixStdio().pipe(
+              text: NatrixText(
+                String.fromCharCodes(chars),
+                foreground: .grayAccent,
+              ),
+            );
           },
-        ),
-        PrintNatrixLine(
-          text: NatrixText("Remove ${Settings.appDirectoryPath}..."),
         ),
         Shell(
           program: "rm",

@@ -11,8 +11,17 @@ environment:
 dependencies:
   path: ^1.9.0
   natrix: ^0.1.3
+  platform_attributes: ^0.1.0
+  stepflow_systemd:
+    git:
+      ref: main
+      url: https://github.com/zopnote/stepflow_systemd.git
+  stepflow_docker:
+    git:
+      ref: main
+      url: https://github.com/zopnote/stepflow_docker.git
   stepflow:
     git:
       url: https://github.com/zopnote/stepflow.git
-      ref: 3.0.0-pre
+      ref: main
   yaml: ^3.1.0

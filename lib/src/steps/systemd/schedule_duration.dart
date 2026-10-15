@@ -1,10 +1,13 @@
 String durationToSchedule(Duration d) {
-  if (d.inDays == 14 && d.inHours % 24 == 0 && d.inMinutes % 60 == 0)
+  if (d.inDays == 14 && d.inHours % 24 == 0 && d.inMinutes % 60 == 0) {
     return 'fortnightly';
-  if (d.inDays == 7 && d.inHours % 24 == 0 && d.inMinutes % 60 == 0)
+  }
+  if (d.inDays == 7 && d.inHours % 24 == 0 && d.inMinutes % 60 == 0) {
     return 'weekly';
-  if (d.inDays == 1 && d.inHours % 24 == 0 && d.inMinutes % 60 == 0)
+  }
+  if (d.inDays == 1 && d.inHours % 24 == 0 && d.inMinutes % 60 == 0) {
     return 'daily';
+  }
   if (d.inDays == 0 && d.inHours == 1 && d.inMinutes % 60 == 0) return 'hourly';
   if (d.inDays == 0 && d.inHours == 0 && d.inMinutes == 1) return 'minutely';
 

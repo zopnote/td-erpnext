@@ -1,9 +1,9 @@
 import 'package:natrix/core.dart';
 import 'package:natrix/io.dart';
 import 'package:natrix/theme.dart';
+import 'package:platform_attributes/core.dart';
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/settings_list_section.dart';
-import 'package:td_erpnext/src/utils.dart';
 
 final NatrixCommand settingsSetCommand = NatrixCommand(
   id: "set",

@@ -13,7 +13,6 @@ final class Settings {
   /// to of the frontend of the running erpnext in the docker container.
   final Setting<String> databaseVolume;
 
-
   /// Sets the docker container name this manager tries to connect
   /// to of the frontend of the running erpnext in the docker container.
   final Setting<String> redisCacheVolume;
@@ -38,12 +37,15 @@ final class Settings {
   /// to of the frontend of the running erpnext in the docker container.
   final Setting<String> schedulerContainer;
 
-  /// Location relative to the apps root where the log
+  /// Location - if relative, relative to the apps root - where the log
   /// files of the working process are stored.
   final Setting<String> backupStoragePath;
 
   /// Name of the systemd services installed by this application.
   static String get serviceName => "td_erpnext";
+
+  /// Name of the frontend site of the installation.
+  static String get siteName => "frontend";
 
   /// Location relative to the apps binary root where the configuration file gets stored.
   static String get settingsFileName => "settings.json";

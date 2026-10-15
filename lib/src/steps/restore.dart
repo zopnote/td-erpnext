@@ -5,10 +5,11 @@ import 'package:path/path.dart' as path;
 import 'package:stepflow/core.dart';
 
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/src/steps/vendor/docker.dart' as docker;
-import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
-    as dockerCompose;
-import 'package:td_erpnext/src/utils.dart';
+import 'package:stepflow_docker/docker.dart' as docker;
+import 'package:stepflow_docker/docker_compose.dart' as dockerCompose;
+
+import '../exception.dart';
+import 'natrix.dart';
 
 class BackupUnspecifiedException implements Exception {
   const BackupUnspecifiedException();
@@ -42,7 +43,7 @@ class NoneBackupException implements Exception {
       "There aren't any backups saved yet inside $bundlesPath.";
 }
 
-class RestoreBackup extends ConfigureStep {
+final class RestoreBackup extends ConfigureStep {
   final bool? restoreLast;
   final bool hard;
   final String? bundleName;
@@ -98,7 +99,7 @@ class RestoreBackup extends ConfigureStep {
         text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent),
       );
     };
-    dockerCompose.OutputCallback composeCallback = (chars) {
+    final dockerCompose.OutputCallback composeCallback = (chars) {
       io.pipe(
         text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent),
       );
@@ -116,18 +117,27 @@ class RestoreBackup extends ConfigureStep {
           workingDirectory: Settings.appDirectoryPath,
           callback: composeCallback,
         ),
-        const PrintNatrixLine(text: NatrixText("Cleaning up old volumes...")),
-        docker.Run(
-          image: docker.Image.busybox,
-          program: "rm",
-          args: ["-rf", "/volume/*"],
-          remove: true,
-          volumes: [
-            docker.Volume(
-              containerPath: "/volume",
-              volumeName: settings.sitesVolume.value,
-            ),
+        docker.Execute(
+          program: "bench",
+          args: [
+            "--site",
+            "'${Settings.siteName}'",
+            "set-maintenance-mode",
+            "on",
           ],
+          container: docker.Container(settings.backendContainer.value),
+          callback: dockerCallback,
+        ),
+        docker.Execute(
+          program: "bench",
+          args: [
+            "--site",
+            "'${Settings.siteName}'",
+            "--force",
+            "restore",
+            "${bundle}/"
+          ],
+          container: docker.Container(settings.backendContainer.value),
           callback: dockerCallback,
         ),
         docker.Run(
@@ -173,44 +183,28 @@ class RestoreBackup extends ConfigureStep {
         docker.Run(
           image: docker.Image.busybox,
           program: "tar",
-          args: [
-            "-xvzf",
-            "backup/sites.tar.gz",
-            "-C",
-            "/sites"
-          ],
+          args: ["-xvzf", "backup/sites.tar.gz", "-C", "/sites"],
           remove: true,
           volumes: [
             docker.Volume(
               containerPath: "/sites",
               volumeName: settings.sitesVolume.value,
             ),
-            docker.Volume(
-              hostPath: bundle,
-              containerPath: "/backup",
-            ),
+            docker.Volume(hostPath: bundle, containerPath: "/backup"),
           ],
           callback: dockerCallback,
         ),
         docker.Run(
           image: docker.Image.busybox,
           program: "tar",
-          args: [
-            "-xvzf",
-            "backup/database.tar.gz",
-            "-C",
-            "/database",
-          ],
+          args: ["-xvzf", "backup/database.tar.gz", "-C", "/database"],
           remove: true,
           volumes: [
             docker.Volume(
               containerPath: "/database",
               volumeName: settings.databaseVolume.value,
             ),
-            docker.Volume(
-              hostPath: bundle,
-              containerPath: "/backup",
-            ),
+            docker.Volume(hostPath: bundle, containerPath: "/backup"),
           ],
           callback: dockerCallback,
         ),

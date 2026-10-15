@@ -45,10 +45,7 @@ NatrixSection get settingsListSection {
 
   return NatrixDocument(
     header: NatrixColumn(
-      lines: NatrixText(
-        "Current settings:",
-        style: .bold,
-      ).wrap(terminalWidth),
+      lines: NatrixText("Current settings:", style: .bold).wrap(terminalWidth),
     ),
     content: NatrixStructure(sections: columns),
     footer: NatrixBlock.empty(),

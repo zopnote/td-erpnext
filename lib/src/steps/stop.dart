@@ -3,10 +3,9 @@ import 'dart:io';
 import 'package:natrix/io.dart';
 import 'package:stepflow/core.dart';
 import 'package:td_erpnext/src/settings.dart';
+import 'package:stepflow_docker/docker_compose.dart' as dockerCompose;
 
-import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
-    as dockerCompose;
-import 'package:td_erpnext/src/utils.dart';
+import '../exception.dart';
 
 class Stop extends ConfigureStep {
   const Stop();
@@ -20,17 +19,12 @@ class Stop extends ConfigureStep {
     if (!dockerCompose.isRunning(composeFile: composeFile)) {
       throw NotRunningException();
     }
-    final NatrixStdio io = NatrixStdio();
-    return Chain(
-      steps: [
-        PrintNatrixLine(text: NatrixText("Stop ${composeFile.path}...")),
-        dockerCompose.Stop(
-          composeFile: composeFile,
-          workingDirectory: Settings.appDirectoryPath,
-          callback: (chars) =>
-              io.pipe(text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent)),
-        ),
-      ],
+    return dockerCompose.Stop(
+      composeFile: composeFile,
+      workingDirectory: Settings.appDirectoryPath,
+      callback: (chars) => NatrixStdio().pipe(
+        text: NatrixText(String.fromCharCodes(chars), foreground: .grayAccent),
+      ),
     );
   }
 }

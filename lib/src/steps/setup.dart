@@ -2,16 +2,17 @@ import 'dart:io';
 
 import 'package:natrix/io.dart';
 import 'package:stepflow/io.dart';
-import 'package:stepflow/core.dart';
 
 import 'package:td_erpnext/src/settings.dart';
-import 'package:td_erpnext/src/steps/vendor/docker.dart' as docker;
-import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
-    as dockerCompose;
-import 'package:td_erpnext/src/steps/vendor/systemd.dart' as systemd;
-import 'package:td_erpnext/src/utils.dart';
+import 'package:stepflow_docker/docker.dart' as docker;
+import 'package:stepflow_docker/docker_compose.dart' as dockerCompose;
+import 'package:stepflow_systemd/systemd.dart' as systemd;
 
-class Setup extends ConfigureStep {
+import '../exception.dart';
+import 'recreate_directory.dart';
+import 'natrix.dart';
+
+final class Setup extends ConfigureStep {
   final String? tag;
   const Setup({this.tag});
 
@@ -35,16 +36,16 @@ class Setup extends ConfigureStep {
           condition: !repository.existsSync(),
           child: Chain(
             steps: [
-              CreateDirectory(
-                Settings.appDirectoryPath,
-                recursive: true,
-                deleteIfExists: true,
-              ),
+              RecreateDirectory(Settings.appDirectoryPath, recursive: true),
               Shell(
                 program: "git",
-                arguments: ["clone",
-                  if (tag != null) ...["--branch", tag!, "--single-branch"],
-                  "https://github.com/frappe/frappe_docker"],
+                arguments: <String>[]
+                  ..add("clone")
+                  ..mapAllNotNull(
+                    tag,
+                    (v) => ["--branch", v, "--single-branch"],
+                  )
+                  ..add("https://github.com/frappe/frappe_docker"),
                 options: ProcessInterfaceOptions(
                   workingDirectory: Settings.appDirectoryPath,
                 ),
@@ -52,7 +53,6 @@ class Setup extends ConfigureStep {
             ],
           ),
         ),
-        const PrintNatrixLine(text: NatrixText("Setup docker container...")),
         dockerCompose.Init(
           composeFile: composeFile,
           detach: true,
@@ -63,9 +63,6 @@ class Setup extends ConfigureStep {
               foreground: .grayAccent,
             ),
           ),
-        ),
-        const PrintNatrixLine(
-          text: NatrixText("Set restart policy of container..."),
         ),
         docker.Update(
           containers: [
@@ -84,9 +81,6 @@ class Setup extends ConfigureStep {
         ),
         const PrintNatrixLine(text: NatrixText("Add systemd boot service...")),
         systemd.SetupAutostart(args: ["start"]),
-        const PrintNatrixLine(
-          text: NatrixText("Writes default configuration to disk..."),
-        ),
         Runnable(() => settings.dump()),
       ],
     );

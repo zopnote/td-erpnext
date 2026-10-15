@@ -2,25 +2,12 @@ import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as path;
-import 'package:stepflow/core.dart';
+import 'package:platform_attributes/core.dart';
 import 'package:stepflow/io.dart';
-import 'package:stepflow/platform.dart';
 import 'package:yaml/yaml.dart';
 
-Future<void> main() async {
-  await runWorkflow(
-    BuildWorkflow(
-      projectRoot: await projectRoot,
-      outDirectoryName: "out",
-      readme: io.File(path.join((await projectRoot).path, "readme.md")),
-      pubspec: io.File(path.join((await projectRoot).path, "pubspec.yaml")),
-    ),
-  );
-
-  io.stdout.writeln("Hello world");
-}
-
-Future<io.Directory> get projectRoot async => await getProjectRoot();
+Future<void> main() async =>
+    await Build(projectRoot: await getProjectRoot(), outDirectoryName: "out")();
 
 class PackageSpecification {
   final String name;
@@ -36,18 +23,14 @@ class PackageSpecification {
   });
 }
 
-class BuildWorkflow extends ConfigureStep {
+class Build extends ConfigureStep {
   final io.Directory projectRoot;
   final String outDirectoryName;
   final void Function(io.File executable)? buildFinishCallback;
-  final io.File readme;
-  final io.File pubspec;
 
-  const BuildWorkflow({
+  const Build({
     required this.projectRoot,
     required this.outDirectoryName,
-    required this.readme,
-    required this.pubspec,
     this.buildFinishCallback,
   });
 
@@ -64,7 +47,9 @@ class BuildWorkflow extends ConfigureStep {
 
   @override
   Step configure() {
-    final PackageSpecification pubspec = _loadPackageInfo(this.pubspec);
+    final PackageSpecification pubspec = _loadPackageInfo(
+      io.File(path.join(projectRoot.path, "pubspec.yaml")),
+    );
     final io.Directory output = io.Directory(
       path.join(
         projectRoot.path,

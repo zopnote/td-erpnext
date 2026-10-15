@@ -1,6 +1,6 @@
-import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
-import 'package:td_erpnext/src/steps/vendor/systemd.dart';
+
+import '../systemd.dart';
 
 class RemoveSchedule extends SystemdStep {
   /// Removes the systemd scheduler (timer and service) with the given [serviceName].

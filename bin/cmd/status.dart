@@ -7,9 +7,9 @@ import 'package:natrix/theme.dart';
 
 import 'package:td_erpnext/src/settings.dart';
 import 'package:td_erpnext/src/flags.dart';
-import 'package:td_erpnext/src/steps/vendor/docker_compose.dart'
+import 'package:stepflow_docker/docker_compose.dart'
     as dockerCompose;
-import 'package:td_erpnext/src/steps/vendor/systemd.dart' as systemd;
+import 'package:stepflow_systemd/systemd.dart' as systemd;
 
 final NatrixCommand statusCommand = NatrixCommand(
   id: "status",

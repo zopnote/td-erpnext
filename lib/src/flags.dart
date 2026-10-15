@@ -1,7 +1,7 @@
 import 'package:natrix/core.dart';
 
-class NextIntFlag extends NatrixFlag<int> {
-  const NextIntFlag({
+class IntFlag extends NatrixFlag<int> {
+  const IntFlag({
     required super.id,
     required super.value,
     super.acronym,
@@ -16,7 +16,7 @@ class NextIntFlag extends NatrixFlag<int> {
   int parse(String raw) => int.parse(raw);
 
   @override
-  NatrixFlag<int> set(int value) => NextIntFlag(
+  NatrixFlag<int> set(int value) => IntFlag(
     id: id,
     value: value,
     acronym: acronym,

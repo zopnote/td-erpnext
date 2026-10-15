@@ -1,7 +1,7 @@
-import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
 
-import 'package:td_erpnext/src/steps/vendor/systemd.dart';
+import '../systemd.dart';
+
 
 class UpdateSchedule extends SystemdStep {
   final Duration interval;

@@ -1,18 +1,17 @@
 import 'dart:io';
 
-import 'package:stepflow/core.dart';
 import 'package:stepflow/io.dart';
+import 'systemd.dart' as settings;
 
-import 'package:td_erpnext/src/settings.dart';
+export 'systemd/get_schedule.dart';
+export 'systemd/remove_autostart.dart';
+export 'systemd/remove_schedule.dart';
+export 'systemd/schedule_duration.dart';
+export 'systemd/service.dart';
+export 'systemd/setup_autostart.dart';
+export 'systemd/setup_schedule.dart';
+export 'systemd/update_schedule.dart';
 
-export 'package:td_erpnext/src/steps/vendor/systemd/remove_autostart.dart';
-export 'package:td_erpnext/src/steps/vendor/systemd/remove_schedule.dart';
-export 'package:td_erpnext/src/steps/vendor/systemd/setup_autostart.dart';
-export 'package:td_erpnext/src/steps/vendor/systemd/setup_schedule.dart';
-export 'package:td_erpnext/src/steps/vendor/systemd/update_schedule.dart';
-export 'package:td_erpnext/src/steps/vendor/systemd/get_schedule.dart';
-export 'package:td_erpnext/src/steps/vendor/systemd/schedule_duration.dart';
-export 'package:td_erpnext/src/steps/vendor/systemd/service.dart';
 
 abstract class SystemdStep extends ConfigureStep {
   const SystemdStep();
@@ -27,7 +26,7 @@ abstract class SystemdStep extends ConfigureStep {
   Step run(ProcessInterfaceOptions options);
 }
 
-String _serviceName = Settings.serviceName;
+String _serviceName = settings.serviceName;
 String get serviceName => _serviceName;
 void setServiceName(String name) => _serviceName = name;
 

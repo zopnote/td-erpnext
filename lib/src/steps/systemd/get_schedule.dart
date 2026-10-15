@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:td_erpnext/src/steps/vendor/systemd.dart';
+import '../systemd.dart';
 
 /// Returns the current duration of the scheduler timer for the given [serviceName].
 ///
